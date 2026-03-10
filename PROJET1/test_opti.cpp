@@ -2,11 +2,10 @@
 #include <vector>
 #include <math.h>
 
-
+#include <OpenXLSX.hpp>
 
 #define CALC_LEVEL_AVAL(DebitTotal) (2.9449f * std::logf(DebitTotal) + 84.867f)
 #define PERTES_DE_CHARGE 0.000005f // soit 0.5 x 10^-5
-
 
 // polynome interface
 class Polynome
@@ -44,7 +43,6 @@ public:
     }
 };
 
-
 class Turbine
 {
 
@@ -70,8 +68,9 @@ public:
         {
             printf("low flow\n");
             return polynomeLowFlow->calculate(debit, Hnet) * rendement;
-        } else {
-            printf("high flow\n");
+        }
+        else
+        {
             return polynomeHighFlow->calculate(debit, Hnet) * rendement;
         }
     }
@@ -92,29 +91,23 @@ public:
         turbines.push_back(std::move(turbine));
     }
 
-    void CalculatePower(float debitTotal)
+    std::vector<float> CalculatePower(float debitTotal)
     {
         H_aval = CALC_LEVEL_AVAL(debitTotal);
-        
-        printf("Hauteur d'eau en aval: %f m\n", H_aval);
         float HauteurDeChute = H_amont - H_aval;
 
-
-        
-        float totalPower = 0.0f;
-        for (int i = 0; i < turbines.size() -1; ++i)
+        std::vector<float> powers (5, 0.0f);
+        for (int i = 0; i < turbines.size() - 1; ++i)
         {
-            float power = turbines[i].calculate_power(HauteurDeChute, debitTotal/ (turbines.size() -1));
-            std::cout << "Puissance de la turbine: " << power << " MW" << std::endl;
-            totalPower += power;
+            float power = turbines[i].calculate_power(HauteurDeChute, debitTotal / (turbines.size() - 1));
+            powers[i] = power;
         }
-        std::cout << "Puissance totale de la centrale: " << totalPower << " MW" << std::endl;
+        return powers;
     }
 };
 
 int main()
 {
-
     // Création de la centrale et ajout de turbines avec des polynômes différents pour les faibles et forts débits
 
     Centrale centrale;
@@ -132,4 +125,54 @@ int main()
 
     centrale.CalculatePower(539.25f);
 
+    // read the B3 cell of the "Data" sheet in the "data.xlsx" file
+    OpenXLSX::XLDocument doc;
+    std::cout << "Opening data.xlsx..." << std::endl;
+    doc.open("data/data.xlsx");
+    std::cout << "Data file opened successfully." << std::endl;
+    auto wks = doc.workbook().worksheet("Sheet1");
+    std::cout << "Worksheet 'Sheet1' accessed successfully." << std::endl;
+    auto cell = wks.cell("B3");
+    std::cout << "Cell B3 accessed successfully." << std::endl;
+    std::string cellValue = cell.value().get<std::string>();
+    std::cout << "Value in B3: " << cellValue << std::endl;
+
+    std::vector<std::pair<float, float>> turbines(5, {0.0f, 0.0f}); // vector pour stocker les débits et puissances des turbines
+
+    for (int numline = 4; numline <= 100; ++numline)
+    {
+        float Elav = wks.cell("B" + std::to_string(numline)).value().get<float>();
+        float QTot = wks.cell("C" + std::to_string(numline)).value().get<float>();
+        float QTurb = wks.cell("D" + std::to_string(numline)).value().get<float>();
+        float QVan = wks.cell("E" + std::to_string(numline)).value().get<float>();
+        float N_Amont = wks.cell("F" + std::to_string(numline)).value().get<float>();
+
+        float TotalPower = 0.0f;
+        char firstTurb = 'G';
+        for (int i = 0; i < 5; ++i)
+        {
+            float Qtrubi = wks.cell(std::string(1, firstTurb++) + std::to_string(numline)).value().get<float>();
+            float PTurbi = wks.cell(std::string(1, firstTurb++) + std::to_string(numline)).value().get<float>();
+            turbines[i].first = Qtrubi;
+            turbines[i].second = PTurbi;
+            TotalPower += turbines[i].first;
+        }
+        // on essais de reproduire les calculs avec notre centrale simulée.
+        auto CalculatedPowers = centrale.CalculatePower(QTurb);
+        // on compare les résultats
+
+        std::cout << std::endl <<"nv aval : " << Elav << ", vs calcul : " << centrale.H_aval;
+        std::cout << "\nReal :\t";
+        for (int i = 0; i < 5; ++i)
+        {
+            std::cout << "T" << i + 1 << ": " << turbines[i].second << " kW, ";
+        }
+        std::cout << "\nCalc :\t";
+        for (int i = 0; i < 5; ++i)
+        {
+            std::cout << "T" << i + 1 << ": " << CalculatedPowers[i] << " kW, ";
+        }
+    }
+
+    std::cout << std::endl;
 }
