@@ -18,11 +18,13 @@ set(OPENXLSX_BUILD_DOCS OFF CACHE INTERNAL "")
 
 FetchContent_MakeAvailable(OpenXLSX)
 
-add_executable(test_opti PROJET1/test_opti.cpp)
+add_executable(UqacOptiProjetHiv2026 PROJET1/Main.cpp
+        PROJET1/src/Calculator.cpp
+        PROJET1/src/Centrale.cpp)
 
-target_link_libraries(test_opti PRIVATE OpenXLSX::OpenXLSX)
-target_compile_features(test_opti PRIVATE cxx_std_17)
+target_link_libraries(UqacOptiProjetHiv2026 PRIVATE OpenXLSX::OpenXLSX)
+target_compile_features(UqacOptiProjetHiv2026 PRIVATE cxx_std_17)
 
 # Commande pour copier le dossier data vers le dossier de build
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/PROJET1/data" 
-     DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Debug")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/PROJET1/data"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
