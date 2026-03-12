@@ -48,7 +48,7 @@ public:
     float calculate_power(float HauteurDeChute, float debit)
     {
         float Hnet = CALC_H_CHUTE_NETTE(HauteurDeChute, debit); // calcul de la hauteur de chute nette en tenant compte des pertes de charge
-        return claculator->calculate(Hnet, debit) * rendement; // calcul de la puissance en fonction de la hauteur de chute nette et du débit
+        return claculator->calculate(debit, Hnet) * rendement; // calcul de la puissance en fonction de la hauteur de chute nette et du débit
     }
 };
 
@@ -131,15 +131,10 @@ public:
 };
 
 
-
-
-
 int main()
 {
     Centrale centrale;
     centrale.load5DefaultTurb();
-    centrale.H_amont = 137.89f; // exemple de hauteur d'eau en amont
-    centrale.CalculatePower(539.25f);
 
     // read the B3 cell of the "Data" sheet in the "data.xlsx" file
     OpenXLSX::XLDocument doc;
@@ -163,6 +158,9 @@ int main()
         float QVan = wks.cell("E" + std::to_string(numline)).value().get<float>();
         float N_Amont = wks.cell("F" + std::to_string(numline)).value().get<float>();
 
+        std::cout << "\n\n--- Line " << numline << " ---\n";
+        std::cout << "Elav: " << Elav << ", QTot: " << QTot << ", QTurb: " << QTurb << ", QVan: " << QVan << ", N_Amont: " << N_Amont << std::endl;
+
         float TotalPower = 0.0f;
         char firstTurb = 'G';
         for (int i = 0; i < 5; ++i)
@@ -174,11 +172,12 @@ int main()
             TotalPower += turbines[i].first;
         }
         // on essais de reproduire les calculs avec notre centrale simulée.
-        auto CalculatedPowers = centrale.CalculatePower(QTurb);
+        auto CalculatedPowers = centrale.CalculatePower(QTot, QVan, N_Amont);
         // on compare les résultats
 
-        std::cout << std::endl
-                  << "nv aval : " << Elav << ", vs calcul : " << centrale.H_aval;
+        std::cout << "centrale stats : " << centrale.H_amont << " m amont, " << centrale.H_aval << " m aval, chute : " << centrale.H_amont - centrale.H_aval << " m\n";
+
+        std::cout << "nv aval : " << Elav << ", vs calcul : " << centrale.H_aval;
         std::cout << "\nReal :\t";
         for (int i = 0; i < 5; ++i)
         {
@@ -187,7 +186,7 @@ int main()
         std::cout << "\nCalc :\t";
         for (int i = 0; i < 5; ++i)
         {
-            std::cout << "T" << i + 1 << ": " << CalculatedPowers[i].second << " kW, ";
+            std::cout << "T" << i + 1 << ": " << CalculatedPowers[i].second << "kW, ";
         }
     }
 
@@ -210,6 +209,7 @@ void Centrale::load5DefaultTurb()
     polynomeT1.p21 =  -4.901e-05f;
     polynomeT1.p12 =  -0.0007456f;
     polynomeT1.p03 =   9.436e-05f;
+
     Turbine t1(std::make_unique<PolyDeg3>(polynomeT1));
     AddTurbine(std::move(t1));
 
