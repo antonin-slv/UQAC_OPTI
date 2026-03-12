@@ -46,7 +46,7 @@ public:
         turbines.push_back(std::move(turbine));
     }
 
-    VecDebitPower CalculatePower(float debitTotal, float debitVan = 0.0f, float N_Amont = 0.0f) {
+    VecDebitPower CalculateAveragePower(float debitTotal, float debitVan = 0.0f, float N_Amont = 0.0f) {
         H_amont = N_Amont;
         H_aval = CALC_LEVEL_AVAL(debitTotal);
         float HauteurDeChute = H_amont - H_aval;
@@ -56,23 +56,33 @@ public:
         int active_turbines = 0;
 
         VecDebitPower powers(0);
-        for (int i = 0; i < turbines.size(); ++i) {
-            active_turbines += !turbines[i].locked;
+        for (const auto & turbine : turbines) {
+            active_turbines += !turbine.locked;
         }
 
         for (auto &turb: turbines) {
             if (!turb.locked) {
-                float debitParTurbine = debitTurbines / active_turbines;
+
                 // on répartit le débit total entre les turbines actives
+                float debitParTurbine = debitTurbines / active_turbines;
                 float debit = debitParTurbine; // débit pour la turbine courante
+
+                // on calcule la puissance de chaque turbine et on l'ajoute à la liste des puissances
                 float power = turb.calculate_power(HauteurDeChute, debit);
                 powers.push_back({debit, power});
-                // on calcule la puissance de chaque turbine et on l'ajoute à la liste des puissances
+
             } else {
                 powers.push_back({0.0f, 0.0f}); // turbine en maintenance, pas de puissance produite
             }
         }
         return powers;
+    }
+
+    VecDebitPower CalculateDistributionAndPower(float debitTotal, float debitVan = 0.0f, float N_Amont = 0.0f) {
+
+        // TODO : Prog dynamic
+
+        return {};
     }
 
     bool lockTurbine(int index) {

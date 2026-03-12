@@ -44,10 +44,11 @@ int main() {
             turbines[i].second = PTurbi;
             TotalPower += turbines[i].first;
         }
-        // on essais de reproduire les calculs avec notre centrale simulée.
-        auto CalculatedPowers = centrale.CalculatePower(QTot, QVan, N_Amont);
-        // on compare les résultats
 
+        // on essais de reproduire les calculs avec notre centrale simulée.
+        auto CalculatedPowers = centrale.CalculateAveragePower(QTot, QVan, N_Amont);
+
+        // on compare les résultats
         std::cout << "centrale stats : " << centrale.H_amont << " m amont, " << centrale.H_aval << " m aval, chute : "
                 << centrale.H_amont - centrale.H_aval << " m\n";
 
