@@ -4,75 +4,48 @@
 
 #include <OpenXLSX.hpp>
 
-#define CALC_LEVEL_AVAL(DebitTotal) (2.9449f * std::logf(DebitTotal) + 84.867f)
+#define CALC_LEVEL_AVAL(DebitTotal) (2.805f * std::logf(DebitTotal) + 85.76f)
 #define PERTES_DE_CHARGE 0.000005f // soit 0.5 x 10^-5
+#define CALC_H_CHUTE_NETTE(HauteurDeChute, Debit) (HauteurDeChute - PERTES_DE_CHARGE * Debit * Debit)
 
 // polynome interface
-class Polynome
+class Calculator
 {
 public:
     virtual float calculate(float x, float y) = 0;
 };
 
-class PolynomeAmont : public Polynome
+class PolyDeg3 : public Calculator
 {
 public:
-    constexpr static float a = 0.6368f;
-    constexpr static float b = 6.3523f;
-    constexpr static float c = 0.0068f;
-    constexpr static float d = -0.0021f;
-    constexpr static float e = -0.0878f;
-    constexpr static float f = -152.19f;
+    float p00,p10 ,p01,p20,p11,p02,p30,p21,p12,p03 = 0.0f;
 
     virtual float calculate(float x, float y) override
     {
-        return a * x + b * y + c * x * y + d * x * x + e * y * y + f;
+        return p00 + p10*x + p01*y + p20*x*x + p11*x*y + p02*y*y + p30*x*x*x 
+                    + p21*x*x*y + p12*x*y*y + p03*y*y*y;
     }
 };
-
-class PolynomeAval : public Polynome
-{
-public:
-    constexpr static float a = 0.3916f;
-    constexpr static float b = 1.0177f;
-    constexpr static float f = -45.427f;
-
-    virtual float calculate(float x, float y) override
-    {
-        return a * x + b * y + f;
-    }
-};
-
 class Turbine
 {
 
-    std::unique_ptr<Polynome> polynomeHighFlow;
-    std::unique_ptr<Polynome> polynomeLowFlow;
+    std::unique_ptr<Calculator> claculator;
 
 public:
+
+    bool locked = false; // pour simuler une turbine en maintenance
+
     Turbine() = default;
 
-    Turbine(std::unique_ptr<Polynome> polyLow, std::unique_ptr<Polynome> polyHigh, float treashHold)
-        : polynomeLowFlow(std::move(polyLow)),
-          polynomeHighFlow(std::move(polyHigh)),
-          flowThreshold(treashHold) {}
+    Turbine(std::unique_ptr<Calculator> polyLow)
+        : claculator(std::move(polyLow)) {}
 
-    float flowThreshold = 125.0f; // seuil de débit pour différencier les faibles et forts débits
     float rendement = 1.0f;       // 100% d'efficacité
 
     float calculate_power(float HauteurDeChute, float debit)
     {
-
-        float Hnet = HauteurDeChute - PERTES_DE_CHARGE * debit * debit; // calcul de la hauteur de chute nette en tenant compte des pertes de charge
-        if (debit <= flowThreshold)
-        {
-            printf("low flow\n");
-            return polynomeLowFlow->calculate(debit, Hnet) * rendement;
-        }
-        else
-        {
-            return polynomeHighFlow->calculate(debit, Hnet) * rendement;
-        }
+        float Hnet = CALC_H_CHUTE_NETTE(HauteurDeChute, debit); // calcul de la hauteur de chute nette en tenant compte des pertes de charge
+        return claculator->calculate(Hnet, debit) * rendement; // calcul de la puissance en fonction de la hauteur de chute nette et du débit
     }
 };
 
@@ -91,38 +64,62 @@ public:
         turbines.push_back(std::move(turbine));
     }
 
-    std::vector<float> CalculatePower(float debitTotal)
+    std::vector<float> CalculatePower(float debitTotal, float debitVan = 0.0f, float N_Amont = 0.0f)
     {
+
+        H_amont = N_Amont;
         H_aval = CALC_LEVEL_AVAL(debitTotal);
         float HauteurDeChute = H_amont - H_aval;
 
-        std::vector<float> powers (5, 0.0f);
-        for (int i = 0; i < turbines.size() - 1; ++i)
+        float debitTurbines = debitTotal - debitVan;
+
+        std::vector<float> powers(5, 0.0f);
+        for (int i = 0; i < turbines.size(); ++i)
         {
-            float power = turbines[i].calculate_power(HauteurDeChute, debitTotal / (turbines.size() - 1));
+            if (turbines[i].locked) {
+                continue; // skip locked turbines
+            }
+            float power = turbines[i].calculate_power(HauteurDeChute, debitTurbines / turbines.size());
             powers[i] = power;
         }
         return powers;
     }
+
+    bool lockTurbine(int index)
+    {
+        if (index >= 0 && index < turbines.size())
+        {
+            turbines[index].locked = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool unlockTurbine(int index)
+    {
+        if (index >= 0 && index < turbines.size())
+        {
+            turbines[index].locked = false;
+            return true;
+        }
+
+        return false;
+    }
+
+
+    void load5DefaultTurb();
 };
+
+
+
+
 
 int main()
 {
-    // Création de la centrale et ajout de turbines avec des polynômes différents pour les faibles et forts débits
-
     Centrale centrale;
-
+    centrale.load5DefaultTurb();
     centrale.H_amont = 137.89f; // exemple de hauteur d'eau en amont
-    for (int i = 0; i < 5; ++i)
-    {
-        auto pLow = std::make_unique<PolynomeAval>();
-        auto pHigh = std::make_unique<PolynomeAmont>();
-
-        // Create a fresh turbine directly inside the adding logic
-        Turbine t(std::move(pLow), std::move(pHigh), 125.0f);
-        centrale.AddTurbine(std::move(t));
-    }
-
     centrale.CalculatePower(539.25f);
 
     // read the B3 cell of the "Data" sheet in the "data.xlsx" file
@@ -161,7 +158,8 @@ int main()
         auto CalculatedPowers = centrale.CalculatePower(QTurb);
         // on compare les résultats
 
-        std::cout << std::endl <<"nv aval : " << Elav << ", vs calcul : " << centrale.H_aval;
+        std::cout << std::endl
+                  << "nv aval : " << Elav << ", vs calcul : " << centrale.H_aval;
         std::cout << "\nReal :\t";
         for (int i = 0; i < 5; ++i)
         {
@@ -175,4 +173,84 @@ int main()
     }
 
     std::cout << std::endl;
+}
+
+
+
+
+void Centrale::load5DefaultTurb()
+{
+    PolyDeg3 polynomeT1 = {};
+    polynomeT1.p00 =      -2.624f;
+    polynomeT1.p10 =      -1.381f;
+    polynomeT1.p01 =      0.2794f;
+    polynomeT1.p20 =     0.00602f;
+    polynomeT1.p11 =     0.06592f;
+    polynomeT1.p02 =    -0.00915f;
+    polynomeT1.p30 =  -1.597e-05f;
+    polynomeT1.p21 =  -4.901e-05f;
+    polynomeT1.p12 =  -0.0007456f;
+    polynomeT1.p03 =   9.436e-05f;
+    Turbine t1(std::make_unique<PolyDeg3>(polynomeT1));
+    AddTurbine(std::move(t1));
+
+    // --- Turbine 2 ---
+    PolyDeg3 polynomeT2 = {};
+    polynomeT2.p00 = -1.699f;
+    polynomeT2.p10 = -1.954f;
+    polynomeT2.p01 = 0.1789f;
+    polynomeT2.p20 = 0.007711f;
+    polynomeT2.p11 = 0.09284f;
+    polynomeT2.p02 = -0.005728f;
+    polynomeT2.p30 = -1.933e-05f;
+    polynomeT2.p21 = -6.597e-05f;
+    polynomeT2.p12 = -0.001106f;
+    polynomeT2.p03 = 5.715e-05f;
+    Turbine t2(std::make_unique<PolyDeg3>(polynomeT2));
+    AddTurbine(std::move(t2));
+
+    // --- Turbine 3 ---
+    PolyDeg3 polynomeT3 = {};
+    polynomeT3.p00 = -0.758f;
+    polynomeT3.p10 = -1.215f;
+    polynomeT3.p01 = 0.06992f;
+    polynomeT3.p20 = 0.004243f;
+    polynomeT3.p11 = 0.06423f;
+    polynomeT3.p02 = -0.001757f;
+    polynomeT3.p30 = -1.197e-05f;
+    polynomeT3.p21 = -3.24e-05f;
+    polynomeT3.p12 = -0.0007572f;
+    polynomeT3.p03 = 1.064e-05f;
+    Turbine t3(std::make_unique<PolyDeg3>(polynomeT3));
+    AddTurbine(std::move(t3));
+
+    // --- Turbine 4 ---
+    PolyDeg3 polynomeT4 = {};
+    polynomeT4.p00 = 0.3147f;
+    polynomeT4.p10 = -1.263f;
+    polynomeT4.p01 = -0.05313f;
+    polynomeT4.p20 = 0.007074f;
+    polynomeT4.p11 = 0.0543f;
+    polynomeT4.p02 = 0.002703f;
+    polynomeT4.p30 = -2.047e-05f;
+    polynomeT4.p21 = -3.824e-05f;
+    polynomeT4.p12 = -0.0005816f;
+    polynomeT4.p03 = -4.155e-05f;
+    Turbine t4(std::make_unique<PolyDeg3>(polynomeT4));
+    AddTurbine(std::move(t4));
+
+    // --- Turbine 5 ---
+    PolyDeg3 polynomeT5 = {};
+    polynomeT5.p00 = -0.3513f;
+    polynomeT5.p10 = -1.366f;
+    polynomeT5.p01 = 0.01318f;
+    polynomeT5.p20 = 0.005064f;
+    polynomeT5.p11 = 0.06935f;
+    polynomeT5.p02 = 0.0007486f;
+    polynomeT5.p30 = -1.186e-05f;
+    polynomeT5.p21 = -5.668e-05f;
+    polynomeT5.p12 = -0.0007641f;
+    polynomeT5.p03 = -2.412e-05f;
+    Turbine t5(std::make_unique<PolyDeg3>(polynomeT5));
+    AddTurbine(std::move(t5));
 }
