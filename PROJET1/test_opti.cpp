@@ -8,6 +8,9 @@
 #define PERTES_DE_CHARGE 0.000005f // soit 0.5 x 10^-5
 #define CALC_H_CHUTE_NETTE(HauteurDeChute, Debit) (HauteurDeChute - PERTES_DE_CHARGE * Debit * Debit)
 
+using VecDebitPower = std::vector<std::pair<float,float>>; // pour stocker les débits et puissances des turbines
+
+
 // polynome interface
 class Calculator
 {
@@ -34,13 +37,13 @@ class Turbine
 public:
 
     bool locked = false; // pour simuler une turbine en maintenance
+    float rendement = 1.0f;       // 100% d'efficacité
 
     Turbine() = default;
 
     Turbine(std::unique_ptr<Calculator> polyLow)
         : claculator(std::move(polyLow)) {}
 
-    float rendement = 1.0f;       // 100% d'efficacité
 
     float calculate_power(float HauteurDeChute, float debit)
     {
@@ -48,6 +51,8 @@ public:
         return claculator->calculate(Hnet, debit) * rendement; // calcul de la puissance en fonction de la hauteur de chute nette et du débit
     }
 };
+
+
 
 class Centrale
 {
@@ -64,7 +69,7 @@ public:
         turbines.push_back(std::move(turbine));
     }
 
-    std::vector<float> CalculatePower(float debitTotal, float debitVan = 0.0f, float N_Amont = 0.0f)
+    VecDebitPower CalculatePower(float debitTotal, float debitVan = 0.0f, float N_Amont = 0.0f)
     {
 
         H_amont = N_Amont;
@@ -73,14 +78,28 @@ public:
 
         float debitTurbines = debitTotal - debitVan;
 
-        std::vector<float> powers(5, 0.0f);
+        int active_turbines = 0;
+
+        VecDebitPower powers(0);
         for (int i = 0; i < turbines.size(); ++i)
         {
-            if (turbines[i].locked) {
-                continue; // skip locked turbines
+
+            active_turbines+= !turbines[i].locked;
+        }
+
+        for (auto& turb : turbines)
+        {
+            if (!turb.locked)
+            {
+                float debitParTurbine = debitTurbines / active_turbines; // on répartit le débit total entre les turbines actives
+                float debit = debitParTurbine; // débit pour la turbine courante                 
+                float power = turb.calculate_power(HauteurDeChute, debit);
+                powers.push_back({debit, power}); // on calcule la puissance de chaque turbine et on l'ajoute à la liste des puissances
             }
-            float power = turbines[i].calculate_power(HauteurDeChute, debitTurbines / turbines.size());
-            powers[i] = power;
+            else
+            {
+                powers.push_back({0.0f, 0.0f}); // turbine en maintenance, pas de puissance produite
+            }
         }
         return powers;
     }
@@ -134,9 +153,9 @@ int main()
     std::string cellValue = cell.value().get<std::string>();
     std::cout << "Value in B3: " << cellValue << std::endl;
 
-    std::vector<std::pair<float, float>> turbines(5, {0.0f, 0.0f}); // vector pour stocker les débits et puissances des turbines
+    VecDebitPower turbines(5, {0.0f, 0.0f}); // vector pour stocker les débits et puissances des turbines
 
-    for (int numline = 4; numline <= 100; ++numline)
+    for (int numline = 4; numline <= 7; ++numline)
     {
         float Elav = wks.cell("B" + std::to_string(numline)).value().get<float>();
         float QTot = wks.cell("C" + std::to_string(numline)).value().get<float>();
@@ -168,7 +187,7 @@ int main()
         std::cout << "\nCalc :\t";
         for (int i = 0; i < 5; ++i)
         {
-            std::cout << "T" << i + 1 << ": " << CalculatedPowers[i] << " kW, ";
+            std::cout << "T" << i + 1 << ": " << CalculatedPowers[i].second << " kW, ";
         }
     }
 
