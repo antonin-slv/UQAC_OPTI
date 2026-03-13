@@ -1,7 +1,10 @@
 ﻿#include <cmath>
 #include <memory>
 #include <vector>
+#include <functional>
+#include <algorithm>
 #include "Calculator.cpp"
+#include "DPResourceAllocation.cpp"
 
 #define CALC_LEVEL_AVAL(DebitTotal) (2.805f * std::logf(DebitTotal) + 85.76f)
 #define PERTES_DE_CHARGE 0.000005f // soit 0.5 x 10^-5
@@ -78,11 +81,33 @@ public:
         return powers;
     }
 
-    VecDebitPower CalculateDistributionAndPower(float debitTotal, float debitVan = 0.0f, float N_Amont = 0.0f) {
+    VecDebitPower CalculateDistributionAndPower(float debitTotal) {
+        float discretization = 5.0f;
 
-        // TODO : Prog dynamic
+        float HauteurDeChute = H_amont - CALC_LEVEL_AVAL(debitTotal);
+        float HauteurDeChuteNette = CALC_H_CHUTE_NETTE(HauteurDeChute, debitTotal);
 
-        return {};
+        std::vector<std::function<float(float)>> PowerCalculationFunctions;
+        PowerCalculationFunctions.reserve(turbines.size());
+        std::vector<std::pair<float, float>> TurbineBounds;
+        TurbineBounds.reserve(turbines.size());
+        for (auto &turbine : turbines) {
+            // on crée une fonction lambda pour calculer la puissance de chaque turbine en fonction du débit qui lui est attribué
+            PowerCalculationFunctions.emplace_back([HauteurDeChuteNette, &turbine](float debit) { return turbine.calculate_power(HauteurDeChuteNette, debit); });
+
+            if (turbine.locked) {
+                TurbineBounds.emplace_back(0.0f, 0.0f); // si la turbine est verrouillée, elle ne peut pas recevoir de débit
+            } else {
+                TurbineBounds.emplace_back(0.0f, debitTotal);
+            }
+        }
+
+
+        DPResourceAllocation dp(std::move(PowerCalculationFunctions), debitTotal, TurbineBounds, discretization);
+
+        auto repartition = dp.allocateResources();
+
+        return repartition; // à implémenter : retourner la distribution de débit et les puissances correspondantes
     }
 
     bool lockTurbine(int index) {

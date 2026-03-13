@@ -6,9 +6,7 @@
 
 int main() {
 
-    Centrale centrale;
-    centrale.load5DefaultTurb();
-    centrale.lockTurbine(2);
+    // centrale.lockTurbine(2);
 
     // read the B3 cell of the "Data" sheet in the "data.xlsx" file
     OpenXLSX::XLDocument doc;
@@ -45,23 +43,17 @@ int main() {
             TotalPower += turbines[i].first;
         }
 
+        std::cout << "============================================== " << std::endl;
         // on essais de reproduire les calculs avec notre centrale simulée.
-        auto CalculatedPowers = centrale.CalculateAveragePower(QTot, QVan, N_Amont);
-
-        // on compare les résultats
-        std::cout << "centrale stats : " << centrale.H_amont << " m amont, " << centrale.H_aval << " m aval, chute : "
-                << centrale.H_amont - centrale.H_aval << " m\n";
-
-        std::cout << "nv aval : " << Elav << ", vs calcul : " << centrale.H_aval;
-        std::cout << "\nReal :\t";
-        for (int i = 0; i < 5; ++i) {
-            std::cout << "T" << i + 1 << ": " << turbines[i].second << " kW, ";
+        Centrale centrale;
+        centrale.load5DefaultTurb();
+        centrale.H_amont = N_Amont;
+        auto CalculatedPowers = centrale.CalculateDistributionAndPower(QTurb);
+        for (int i = 0; i < CalculatedPowers.size(); ++i) {
+            std::cout << "Turbine " << (i + 1) <<" Debit Tot. : "<< CalculatedPowers[i].first << " Power calc = " << CalculatedPowers[i].second
+                    << ", real Power = " << turbines[i].second << std::endl;
         }
-        std::cout << "\nCalc :\t";
-        for (int i = 0; i < 5; ++i) {
-            std::cout << "T" << i + 1 << ": " << CalculatedPowers[i].second << "kW, ";
-        }
+
+        std::cout << std::endl;
     }
-
-    std::cout << std::endl;
 }
