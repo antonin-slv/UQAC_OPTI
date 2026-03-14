@@ -22,7 +22,11 @@ int main() {
 
     VecDebitPower turbines(5, {0.0f, 0.0f}); // vector pour stocker les débits et puissances des turbines
 
-    for (int numline = 4; numline <= 7; ++numline) {
+    int firstLine = 5144;
+    int nbLine = 3;
+
+
+    for (int numline = firstLine; numline < nbLine + firstLine; ++numline) {
         auto Elav = wks.cell("B" + std::to_string(numline)).value().get<float>();
         auto QTot = wks.cell("C" + std::to_string(numline)).value().get<float>();
         auto QTurb = wks.cell("D" + std::to_string(numline)).value().get<float>();
@@ -48,11 +52,14 @@ int main() {
         Centrale centrale;
         centrale.load5DefaultTurb();
         centrale.H_amont = N_Amont;
+
         auto CalculatedPowers = centrale.CalculateDistributionAndPower(QTurb);
         for (int i = 0; i < CalculatedPowers.size(); ++i) {
-            std::cout << "Turbine " << (i + 1) <<" Debit Tot. : "<< CalculatedPowers[i].first << " Power calc = " << CalculatedPowers[i].second
-                    << ", real Power = " << turbines[i].second << std::endl;
+            std::cout << "Turbine " << (i + 1) <<" Debit : "<< CalculatedPowers[i].first << " Power calc = " << CalculatedPowers[i].second
+                    << ", real Power = " << turbines[i].second << ", real Debit = " << turbines[i].first <<std::endl;
         }
+
+        std::cout << " CALC_H_CHUTE_NETTE : " << CALC_H_CHUTE_NETTE(N_Amont - CALC_LEVEL_AVAL(140), 140) << std::endl;
 
         std::cout << std::endl;
     }

@@ -84,7 +84,7 @@ public:
                     float bestGainForPreviousFunctions = 0.0f;
                     if (i != 0) {
                         for (const auto& entry: dpTable[i-1]) {
-                            if (entry.first == remaining) {
+                            if (entry.first < remaining + 0.01f && entry.first > remaining - 0.01f) {
                                 // si les ressources restantes sont suffisantes pour l'allocation actuelle
                                 bestGainForPreviousFunctions = entry.second.empty() ? 0.0f : maxFloat(entry.second).second;
                                 break;
@@ -103,11 +103,23 @@ public:
 
         auto bestOverallGain = maxFloat(dpTable.back().front().second); // on prend le meilleur gain global à la fin de la table
 
+        auto resultat = std::vector<std::pair<float, float>>(m_functions.size());
 
-        int i = bestOverallGain.second;
+        float remainingResource = m_totalResource;
 
-        return std::vector<std::pair<float, float>>({bestOverallGain});
+        for (int i = m_functions.size() - 1; i >= 0; --i) {
+            for (auto& entry: dpTable[i]) {
+                if (entry.first < remainingResource + 0.01f && entry.first > remainingResource - 0.01f) {
+                    resultat[i] = maxFloat(entry.second);
+                    if (i < m_functions.size() - 1) {
+                        resultat[i+1].second -= resultat[i].second;
+                    }
+                    remainingResource -= resultat[i].first;
+                    break;
+                }
+            }
+        }
 
-        return std::vector<std::pair<float, float> >(m_functions.size()); // à implémenter
+        return resultat;
     }
 };

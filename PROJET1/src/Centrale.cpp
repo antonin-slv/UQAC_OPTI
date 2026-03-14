@@ -28,10 +28,17 @@ public:
     }
 
     float calculate_power(float HauteurDeChute, float debit) {
+
+        if (debit < 4.0f) {
+            return 0.0f;
+        }
+
         // calcul de la hauteur de chute nette en tenant compte des pertes de charge
         float Hnet = CALC_H_CHUTE_NETTE(HauteurDeChute, debit);
         // calcul de la puissance en fonction de la hauteur de chute nette et du débit
-        return claculator->calculate(debit, Hnet) * rendement;
+        float resultat =  claculator->calculate(debit, Hnet) * rendement;
+
+        return std::max(resultat,0.0f);
     }
 };
 
@@ -82,10 +89,9 @@ public:
     }
 
     VecDebitPower CalculateDistributionAndPower(float debitTotal) {
-        float discretization = 5.0f;
+        float discretization = 1.01f;
 
         float HauteurDeChute = H_amont - CALC_LEVEL_AVAL(debitTotal);
-        float HauteurDeChuteNette = CALC_H_CHUTE_NETTE(HauteurDeChute, debitTotal);
 
         std::vector<std::function<float(float)>> PowerCalculationFunctions;
         PowerCalculationFunctions.reserve(turbines.size());
@@ -93,12 +99,12 @@ public:
         TurbineBounds.reserve(turbines.size());
         for (auto &turbine : turbines) {
             // on crée une fonction lambda pour calculer la puissance de chaque turbine en fonction du débit qui lui est attribué
-            PowerCalculationFunctions.emplace_back([HauteurDeChuteNette, &turbine](float debit) { return turbine.calculate_power(HauteurDeChuteNette, debit); });
+            PowerCalculationFunctions.emplace_back([HauteurDeChute, &turbine](float debit) { return turbine.calculate_power(HauteurDeChute, debit); });
 
             if (turbine.locked) {
                 TurbineBounds.emplace_back(0.0f, 0.0f); // si la turbine est verrouillée, elle ne peut pas recevoir de débit
             } else {
-                TurbineBounds.emplace_back(0.0f, debitTotal);
+                TurbineBounds.emplace_back(0.0f, 160.0f);
             }
         }
 
