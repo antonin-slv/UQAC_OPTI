@@ -1,6 +1,7 @@
 ﻿#include <cassert>
 #include <functional>
 #include <vector>
+#include <cmath>
 
 class DPResourceAllocation {
 
@@ -48,18 +49,18 @@ public:
 
         for (int i = 0; i < m_functions.size(); ++i) {  // i : etapes (0 à nombre de turbines)
             for (int r = 0; r < nbSteps; ++r) {         // r : etat (ressource restante)
-                float availableDebit = r * m_step;
+                float availableDebit = m_step * r;
 
                 // tous les choix
                 const float minB = m_bounds[i].first;
                 const float maxB = std::min(m_bounds[i].second, availableDebit);
 
                 for (float choice = minB; choice <= maxB; choice += m_step) {
-                    float currentGain = m_functions[i](choice);
+                    const float currentGain = m_functions[i](choice);
                     float totalGain = currentGain;
 
                     if (i > 0) {
-                        int remainingIdx = static_cast<int>((availableDebit - choice) / m_step + 0.5f);
+                        const int remainingIdx = std::lround( (availableDebit - choice) / m_step);
                         totalGain += dpTable[i-1][remainingIdx].bestGain;
                     }
 
@@ -75,10 +76,10 @@ public:
         std::vector<std::pair<float, float>> results;
         float currentRemainingRes = m_totalResource;
 
-        currentRemainingRes = static_cast<int>(currentRemainingRes / m_step) * m_step;
+        currentRemainingRes = std::floor(currentRemainingRes / m_step) * m_step;
 
         for (int i = static_cast<int>(m_functions.size()) - 1; i >= 0; --i) {
-            int rIdx = static_cast<int>(currentRemainingRes / m_step + 0.5f);
+            const int rIdx = std::lround(currentRemainingRes / m_step );
 
             float chosenDebit = dpTable[i][rIdx].choiceMade;
             float gainObtained = m_functions[i](chosenDebit);
