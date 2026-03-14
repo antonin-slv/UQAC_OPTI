@@ -52,6 +52,8 @@ int main() {
         Centrale centrale;
         centrale.load5DefaultTurb();
         centrale.H_amont = N_Amont;
+        // centrale.turbines[1].maxDebit = 130;
+        // centrale.lockTurbine(2);
 
         auto CalculatedPowers = centrale.CalculateDistributionAndPower(QTurb);
         for (int i = 0; i < CalculatedPowers.size(); ++i) {
@@ -59,7 +61,7 @@ int main() {
                     << ", real Power = " << turbines[i].second << ", real Debit = " << turbines[i].first <<std::endl;
         }
 
-        std::cout << " CALC_H_CHUTE_NETTE : " << CALC_H_CHUTE_NETTE(N_Amont - CALC_LEVEL_AVAL(140), 140) << std::endl;
+        // std::cout << " CALC_H_CHUTE_NETTE : " << CALC_H_CHUTE_NETTE(N_Amont - CALC_LEVEL_AVAL(600), 140) << std::endl;
 
         std::cout << std::endl;
     }
