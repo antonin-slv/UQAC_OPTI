@@ -3,6 +3,9 @@
 #include <OpenXLSX.hpp>
 
 #include "src/centrale.cpp"
+#include "src/DPResourceAllocation.cpp"
+#include "src/DPResourceAllocationFast.cpp"
+
 
 int main() {
 
@@ -48,12 +51,24 @@ int main() {
         }
 
         std::cout << "============================================== " << std::endl;
-        // on essais de reproduire les calculs avec notre centrale simulée.
-        Centrale centrale;
-        centrale.load5DefaultTurb();
-        centrale.H_amont = N_Amont;
-        // centrale.turbines[1].maxDebit = 130;
-        // centrale.lockTurbine(2);
+
+        // ON CRÉE LA CENTRALE
+
+            Centrale centrale;
+            centrale.load5DefaultTurb();
+            centrale.H_amont = N_Amont;
+
+        // ON AJOUTE LES CONTRAINTES (par defaut maxDebit = 160, minDebit = 0)
+
+            // centrale.turbines[1].maxDebit = 130;
+            // centrale.lockTurbine(2);
+
+        // ON CHOISIT LE SOLVEUR (ici, la programmation dynamique)
+
+            // DPResourceAllocation solver(1.0f); // pas de 1 unité de débit
+            DPResourceAllocationFast solver(1.0f); // pas de 1 unité de débit
+            centrale.setSolver(&solver);
+
 
         auto CalculatedPowers = centrale.CalculateDistributionAndPower(QTurb);
         for (int i = 0; i < CalculatedPowers.size(); ++i) {

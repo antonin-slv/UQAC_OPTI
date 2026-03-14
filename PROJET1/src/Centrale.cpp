@@ -4,7 +4,7 @@
 #include <functional>
 #include <algorithm>
 #include "Calculator.cpp"
-#include "DPResourceAllocationFast.cpp"
+#include "ResourceAllocationSolver.cpp"
 
 #define CALC_LEVEL_AVAL(DebitTotal) (2.805f * std::logf(DebitTotal) + 85.76f)
 #define PERTES_DE_CHARGE 0.000005f // soit 0.5 x 10^-5
@@ -50,6 +50,7 @@ public:
 
     float H_amont = 0.0f; // hauteur d'eau en amont
     float H_aval = 0.0f; // hauteur d'eau en aval
+    ResourceAllocationSolver* solver;
 
     Centrale() = default;
 
@@ -87,17 +88,21 @@ public:
         return powers;
     }
 
+    void setSolver(ResourceAllocationSolver* _solver) {
+        solver = _solver;
+    }
+
     VecDebitPower CalculateDistributionAndPower(float debitTotal) {
-        float discretization = 5.0f;
 
         float HauteurDeChute = H_amont - CALC_LEVEL_AVAL(debitTotal);
 
-        std::vector<std::function<float(float)> > PowerCalculationFunctions;
+        // on crée un tableau de fonction lambda pour calculer la puissance de chaque turbine en fonction du débit qui lui est attribué
+        std::vector<std::function<float(float)>> PowerCalculationFunctions;
         PowerCalculationFunctions.reserve(turbines.size());
         std::vector<std::pair<float, float> > TurbineBounds;
         TurbineBounds.reserve(turbines.size());
+
         for (auto &turbine: turbines) {
-            // on crée une fonction lambda pour calculer la puissance de chaque turbine en fonction du débit qui lui est attribué
             PowerCalculationFunctions.emplace_back([HauteurDeChute, &turbine](float debit) {
                 return turbine.calculate_power(HauteurDeChute, debit);
             });
@@ -106,12 +111,9 @@ public:
                                        turbine.locked ? 0.0f : turbine.maxDebit);
         }
 
+        solver->setParameters(std::move(PowerCalculationFunctions), TurbineBounds, debitTotal);
 
-        DPResourceAllocation dp(std::move(PowerCalculationFunctions), debitTotal, TurbineBounds, discretization);
-
-        auto repartition = dp.allocateResources();
-
-        return repartition; // à implémenter : retourner la distribution de débit et les puissances correspondantes
+        return solver->allocateResources();
     }
 
     bool lockTurbine(int index) {

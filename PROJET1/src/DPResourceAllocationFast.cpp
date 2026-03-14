@@ -1,42 +1,25 @@
-﻿#include <cassert>
-#include <functional>
+﻿#include <functional>
 #include <vector>
 #include <cmath>
+#include "ResourceAllocationSolver.cpp"
 
-class DPResourceAllocation {
+class DPResourceAllocationFast : public ResourceAllocationSolver {
 
 public:
     using GainFunction = std::function<float(float)>;
 
 private:
-    /* fonction permettant de calculer le gain en fonction de la ressource allouée. */
-    std::vector<GainFunction> m_functions;
-    /* les limites inférieure et supérieure de la ressource allouée pour chaque fonction de gain. */
-    std::vector<std::pair<float, float> > m_bounds;
-    /* la quantité totale de ressource disponible pour l'allocation. */
-    float m_totalResource;
-    /* Pas de discrétisation pour l'allocation de ressources. */
+
     float m_step;
 
 public:
-    DPResourceAllocation(
-        std::vector<GainFunction> functions,
-        const float totalResource,
-        std::vector<std::pair<float, float> > bounds,
-        const float step)
-        : m_functions(std::move(functions)),
-          m_bounds(std::move(bounds)),
-          m_totalResource(totalResource),
-          m_step(step) {
-        assert(m_functions.size() == m_bounds.size());
-    }
-
+    explicit DPResourceAllocationFast(const float step): m_step(step) {}
 
     /**
      *fonction d'allocation de ressources avec programmation dynamique.
      * La fonction retourner un vecteur de paires (décision, gain) pour chaque fonction de gain, où la décision est la quantité de ressource allouée à cette fonction et le gain est le gain correspondant.
      */
-    [[nodiscard]] std::vector<std::pair<float, float> > allocateResources() const {
+    [[nodiscard]] std::vector<std::pair<float, float> > allocateResources() override {
 
         struct Cell {
             float bestGain = -1.0f;     // Le gain max pour cette ressource à cette étape

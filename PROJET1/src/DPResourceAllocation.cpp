@@ -1,8 +1,9 @@
 ﻿#include <cassert>
 #include <functional>
 #include <vector>
+#include "ResourceAllocationSolver.cpp"
 
-class DPResourceAllocation {
+class DPResourceAllocation : public ResourceAllocationSolver {
     std::function<std::pair<float, float>(std::vector<std::pair<float, float> >)> maxFloat = [
             ](const std::vector<std::pair<float, float> > &gains) {
         std::pair<float, float> bestGain = {0.0f, 0.0f};
@@ -18,34 +19,17 @@ public:
     using GainFunction = std::function<float(float)>;
 
 private:
-    /* fonction permettant de calculer le gain en fonction de la ressource allouée. */
-    std::vector<GainFunction> m_functions;
-    /* les limites inférieure et supérieure de la ressource allouée pour chaque fonction de gain. */
-    std::vector<std::pair<float, float> > m_bounds;
-    /* la quantité totale de ressource disponible pour l'allocation. */
-    float m_totalResource;
-    /* Pas de discrétisation pour l'allocation de ressources. */
     float m_step;
 
 public:
-    DPResourceAllocation(
-        std::vector<GainFunction> functions,
-        float totalResource,
-        std::vector<std::pair<float, float> > bounds,
-        float step)
-        : m_functions(std::move(functions)),
-          m_totalResource(totalResource),
-          m_bounds(std::move(bounds)),
-          m_step(step) {
-        assert(m_functions.size() == m_bounds.size());
-    }
-
+    DPResourceAllocation(const float step): m_step(step) {}
 
     /**
      *fonction d'allocation de ressources avec programmation dynamique.
      * La fonction retourner un vecteur de paires (décision, gain) pour chaque fonction de gain, où la décision est la quantité de ressource allouée à cette fonction et le gain est le gain correspondant.
      */
-    std::vector<std::pair<float, float> > allocateResources() {
+    std::vector<std::pair<float, float> > allocateResources() override {
+
         struct DPEntry {
             float allocatedResource; // la quantité de ressource allouée à cette fonction
             float gain; // le gain correspondant à cette allocation
