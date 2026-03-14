@@ -21,7 +21,8 @@ FetchContent_MakeAvailable(OpenXLSX)
 add_executable(UqacOptiProjetHiv2026 PROJET1/Main.cpp
         PROJET1/src/Calculator.cpp
         PROJET1/src/Centrale.cpp
-        PROJET1/src/DPResourceAllocation.cpp)
+        PROJET1/src/DPResourceAllocation.cpp
+        PROJET1/src/DPResourceAllocationFast.cpp)
 
 target_link_libraries(UqacOptiProjetHiv2026 PRIVATE OpenXLSX::OpenXLSX)
 target_compile_features(UqacOptiProjetHiv2026 PRIVATE cxx_std_17)

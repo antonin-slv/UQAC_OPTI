@@ -22,8 +22,8 @@ int main() {
 
     VecDebitPower turbines(5, {0.0f, 0.0f}); // vector pour stocker les débits et puissances des turbines
 
-    int firstLine = 5144;
-    int nbLine = 3;
+    int firstLine = 4;
+    int nbLine = 100;
 
 
     for (int numline = firstLine; numline < nbLine + firstLine; ++numline) {

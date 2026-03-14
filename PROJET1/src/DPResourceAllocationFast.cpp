@@ -1,0 +1,96 @@
+﻿#include <cassert>
+#include <functional>
+#include <vector>
+
+class DPResourceAllocation {
+
+public:
+    using GainFunction = std::function<float(float)>;
+
+private:
+    /* fonction permettant de calculer le gain en fonction de la ressource allouée. */
+    std::vector<GainFunction> m_functions;
+    /* les limites inférieure et supérieure de la ressource allouée pour chaque fonction de gain. */
+    std::vector<std::pair<float, float> > m_bounds;
+    /* la quantité totale de ressource disponible pour l'allocation. */
+    float m_totalResource;
+    /* Pas de discrétisation pour l'allocation de ressources. */
+    float m_step;
+
+public:
+    DPResourceAllocation(
+        std::vector<GainFunction> functions,
+        const float totalResource,
+        std::vector<std::pair<float, float> > bounds,
+        const float step)
+        : m_functions(std::move(functions)),
+          m_bounds(std::move(bounds)),
+          m_totalResource(totalResource),
+          m_step(step) {
+        assert(m_functions.size() == m_bounds.size());
+    }
+
+
+    /**
+     *fonction d'allocation de ressources avec programmation dynamique.
+     * La fonction retourner un vecteur de paires (décision, gain) pour chaque fonction de gain, où la décision est la quantité de ressource allouée à cette fonction et le gain est le gain correspondant.
+     */
+    [[nodiscard]] std::vector<std::pair<float, float> > allocateResources() const {
+
+        struct Cell {
+            float bestGain = -1.0f;     // Le gain max pour cette ressource à cette étape
+            float choiceMade = 0.0f;    // Le débit choisi pour la turbine actuelle
+        };
+
+        // La matrice : [Nombre de Turbines][Nombre de pas de discrétisation]
+        const int nbSteps = static_cast<int>(m_totalResource / m_step) + 1;
+        std::vector<std::vector<Cell>> dpTable(m_functions.size(), std::vector<Cell>(nbSteps));
+
+        for (int i = 0; i < m_functions.size(); ++i) {  // i : etapes (0 à nombre de turbines)
+            for (int r = 0; r < nbSteps; ++r) {         // r : etat (ressource restante)
+                float availableDebit = r * m_step;
+
+                // tous les choix
+                const float minB = m_bounds[i].first;
+                const float maxB = std::min(m_bounds[i].second, availableDebit);
+
+                for (float choice = minB; choice <= maxB; choice += m_step) {
+                    float currentGain = m_functions[i](choice);
+                    float totalGain = currentGain;
+
+                    if (i > 0) {
+                        int remainingIdx = static_cast<int>((availableDebit - choice) / m_step + 0.5f);
+                        totalGain += dpTable[i-1][remainingIdx].bestGain;
+                    }
+
+                    if (totalGain > dpTable[i][r].bestGain) {
+                        dpTable[i][r].bestGain = totalGain;
+                        dpTable[i][r].choiceMade = choice;
+                    }
+                }
+            }
+        }
+
+        // ----------------- Backtracking
+        std::vector<std::pair<float, float>> results;
+        float currentRemainingRes = m_totalResource;
+
+        currentRemainingRes = static_cast<int>(currentRemainingRes / m_step) * m_step;
+
+        for (int i = static_cast<int>(m_functions.size()) - 1; i >= 0; --i) {
+            int rIdx = static_cast<int>(currentRemainingRes / m_step + 0.5f);
+
+            float chosenDebit = dpTable[i][rIdx].choiceMade;
+            float gainObtained = m_functions[i](chosenDebit);
+
+            results.emplace_back(chosenDebit, gainObtained);
+
+            currentRemainingRes -= chosenDebit;
+        }
+
+        // Comme on a parcouru de i = N à 0, il faut remettre dans l'ordre
+        std::reverse(results.begin(), results.end());
+
+        return results;
+    }
+};

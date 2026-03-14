@@ -4,7 +4,7 @@
 #include <functional>
 #include <algorithm>
 #include "Calculator.cpp"
-#include "DPResourceAllocation.cpp"
+#include "DPResourceAllocationFast.cpp"
 
 #define CALC_LEVEL_AVAL(DebitTotal) (2.805f * std::logf(DebitTotal) + 85.76f)
 #define PERTES_DE_CHARGE 0.000005f // soit 0.5 x 10^-5
