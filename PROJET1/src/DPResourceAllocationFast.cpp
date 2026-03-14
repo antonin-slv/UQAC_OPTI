@@ -49,7 +49,7 @@ public:
 
         for (int i = 0; i < m_functions.size(); ++i) {  // i : etapes (0 à nombre de turbines)
             for (int r = 0; r < nbSteps; ++r) {         // r : etat (ressource restante)
-                float availableDebit = m_step * r;
+                float availableDebit = m_step * static_cast<float>(r);
 
                 // tous les choix
                 const float minB = m_bounds[i].first;
