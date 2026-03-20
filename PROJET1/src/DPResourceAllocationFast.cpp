@@ -1,6 +1,8 @@
 ﻿#include <functional>
 #include <vector>
 #include <cmath>
+#include <algorithm>
+#include <omp.h>
 #include "ResourceAllocationSolver.cpp"
 
 class DPResourceAllocationFast : public ResourceAllocationSolver {
@@ -31,6 +33,7 @@ public:
         std::vector<std::vector<Cell>> dpTable(m_functions.size(), std::vector<Cell>(nbSteps));
 
         for (int i = 0; i < m_functions.size(); ++i) {  // i : etapes (0 à nombre de turbines)
+            #pragma omp parallel for
             for (int r = 0; r < nbSteps; ++r) {         // r : etat (ressource restante)
                 float availableDebit = m_step * static_cast<float>(r);
 

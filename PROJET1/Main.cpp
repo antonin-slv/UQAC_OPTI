@@ -2,13 +2,86 @@
 #include <vector>
 #include <OpenXLSX.hpp>
 
-#include "src/centrale.cpp"
+#include "src/Centrale.cpp"
 #include "src/DPResourceAllocation.cpp"
 #include "src/DPResourceAllocationFast.cpp"
+#include <fstream>
+#include <iomanip>
+#include <sstream>
 
 
-int main() {
+std::string PrintNumber (double val) {
+    // Si la valeur est entière (ex: 135.0), on la convertit en long pour supprimer le .0
+    if (std::floor(val) == val) {
+        return std::to_string((long)val);
+    }
+    // Sinon, on formate avec une décimale
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(1) << val;
+    return ss.str();
+}
 
+void print_rslt_to_output(std::ofstream & logFile, int firstLine, int nbLine, int numline, VecDebitPower turbines, float QTurb, float TotalRealPower, float totalCalcP, float totalCalcQ, VecDebitPower CalculatedPowers)
+{
+    std::string entete_latex = R"(\begin{table}[h!]
+\centering
+\caption{Comparaison des débits ($m^3/s$) et puissances ($MW$)}
+\label{tab:comparaison_103}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|c|c|ccccc|cc|ccccc|}
+\hline
+\textbf{Ligne} & \textbf{Type} & \textbf{$Q_1$} & \textbf{$Q_2$} & \textbf{$Q_3$} & \textbf{$Q_4$} & \textbf{$Q_5$} & \textbf{$Q_t_o_t$} & \textbf{$P_t_o_t$} &  \textbf{$P_1$} & \textbf{$P_2$} & \textbf{$P_3$} & \textbf{$P_4$} & \textbf{$P_5$} \\ \hline)";
+
+    std::string pied_latex = R"(\end{tabular}%
+}
+\end{table})";
+
+
+    int sectionNumbers = 4;
+    int linesPerSection = nbLine / sectionNumbers;
+    int currentIdx = numline - firstLine;
+
+    if (numline == firstLine)
+    {
+        logFile << entete_latex << std::endl;
+    }
+
+    logFile << numline << " & \\textbf{Reel}";
+    // Débits unitaires (Q1-Q5)
+    for (int i = 0; i < 5; ++i) logFile << " & " << turbines[i].first;
+    // Totaux (Qtot, Ptot)
+    logFile << " & " << PrintNumber(QTurb) << " & " << PrintNumber(TotalRealPower);
+    // Puissances unitaires (P1-P5)
+    for (int i = 0; i < 5; ++i) logFile << " & " << PrintNumber(turbines[i].second);
+    logFile << R"( \\ \cline{2-14})" << std::endl;
+
+    // --- LIGNE CALCULÉ ---
+    logFile << "  & \\textbf{Calcul}";
+    // Débits unitaires (Q1-Q5)
+    for (int i = 0; i < 5; ++i) logFile << " & " << CalculatedPowers[i].first;
+    // Totaux (Qtot, Ptot)
+    logFile << " & " << PrintNumber(totalCalcQ) << " & " << PrintNumber(totalCalcP);
+    // Puissances unitaires (P1-P5)
+    for (int i = 0; i < 5; ++i) logFile << " & " << PrintNumber(CalculatedPowers[i].second);
+    logFile << R"( \\ \hline)" << std::endl;
+
+    bool isEndOfSection = (currentIdx + 1) % linesPerSection == 0;
+    bool isNotLastTotalLine = (numline != firstLine + nbLine - 1);
+    if (isEndOfSection && isNotLastTotalLine)
+    {
+        // On ferme le tableau actuel, on ajoute un espace ou un saut de page,
+        // et on ré-ouvre un nouveau tableau avec l'en-tête
+        logFile << pied_latex << "\n\n\\newpage\n\n" << entete_latex << std::endl;
+    }
+
+    if (numline == firstLine + nbLine - 1)
+    {
+        logFile << pied_latex << std::endl;
+    }
+}
+
+int main()
+{
     // centrale.lockTurbine(2);
 
     // read the B3 cell of the "Data" sheet in the "data.xlsx" file
@@ -28,56 +101,62 @@ int main() {
     int firstLine = 4;
     int nbLine = 100;
 
+    //ON CREE LA CENTRALE
+    Centrale centrale;
+    centrale.load5DefaultTurb();
 
-    for (int numline = firstLine; numline < nbLine + firstLine; ++numline) {
-        auto Elav = wks.cell("B" + std::to_string(numline)).value().get<float>();
-        auto QTot = wks.cell("C" + std::to_string(numline)).value().get<float>();
-        auto QTurb = wks.cell("D" + std::to_string(numline)).value().get<float>();
-        auto QVan = wks.cell("E" + std::to_string(numline)).value().get<float>();
-        auto N_Amont = wks.cell("F" + std::to_string(numline)).value().get<float>();
+    // ON AJOUTE LES CONTRAINTES (par defaut maxDebit = 160, minDebit = 0)
 
-        std::cout << "\n\n--- Line " << numline << " ---\n";
-        std::cout << "Elav: " << Elav << ", QTot: " << QTot << ", QTurb: " << QTurb << ", QVan: " << QVan <<
-                ", N_Amont: " << N_Amont << std::endl;
+    // centrale.turbines[1].maxDebit = 130;
+    // centrale.lockTurbine(2);
 
-        float TotalPower = 0.0f;
-        char firstTurb = 'G';
-        for (int i = 0; i < 5; ++i) {
-            auto Qtrubi = wks.cell(std::string(1, firstTurb++) + std::to_string(numline)).value().get<float>();
-            auto PTurbi = wks.cell(std::string(1, firstTurb++) + std::to_string(numline)).value().get<float>();
-            turbines[i].first = Qtrubi;
-            turbines[i].second = PTurbi;
-            TotalPower += turbines[i].first;
-        }
+    // ON CHOISIT LE SOLVEUR (ici, la programmation dynamique)
+    // DPResourceAllocation solver(1.0f); // pas de 1 unité de débit
+    DPResourceAllocationFast solver(.2f); // pas de 1 unité de débit
+    centrale.setSolver(&solver);
 
-        std::cout << "============================================== " << std::endl;
+    std::ofstream logFile("resultats_validation.tex", std::ios::app);
 
-        // ON CRÉE LA CENTRALE
+    std::cout << "Launch the prog" << std::endl;
 
-            Centrale centrale;
-            centrale.load5DefaultTurb();
+    for (int i = 0; i < 1; ++i) {
+        for (int numline = firstLine; numline < nbLine + firstLine; ++numline) {
+
+
+            //auto Elav = wks.cell("B" + std::to_string(numline)).value().get<float>();
+            //auto QTot = wks.cell("C" + std::to_string(numline)).value().get<float>();
+            auto QTurb = wks.cell("D" + std::to_string(numline)).value().get<float>();
+            //auto QVan = wks.cell("E" + std::to_string(numline)).value().get<float>();
+            auto N_Amont = wks.cell("F" + std::to_string(numline)).value().get<float>();
+
+            float TotalRealPower = 0.0f;
+            char firstTurb = 'G';
+            for (int i = 0; i < 5; ++i) {
+                auto Qtrubi = wks.cell(std::string(1, firstTurb++) + std::to_string(numline)).value().get<float>();
+                auto PTurbi = wks.cell(std::string(1, firstTurb++) + std::to_string(numline)).value().get<float>();
+                turbines[i].first = Qtrubi;
+                turbines[i].second = PTurbi;
+                TotalRealPower += turbines[i].second;
+            }
+
+            // ON paramètre la centrale.
             centrale.H_amont = N_Amont;
+            float totalCalcP = 0, totalCalcQ = 0;
 
-        // ON AJOUTE LES CONTRAINTES (par defaut maxDebit = 160, minDebit = 0)
+            auto CalculatedPowers = centrale.CalculateDistributionAndPower(QTurb);
 
-            // centrale.turbines[1].maxDebit = 130;
-            // centrale.lockTurbine(2);
+            for (auto & [fst, snd] : CalculatedPowers) {
+                totalCalcP += snd;
+                totalCalcQ += fst;
+            }
 
-        // ON CHOISIT LE SOLVEUR (ici, la programmation dynamique)
+            if (logFile.is_open())
+            {
+                print_rslt_to_output(logFile, firstLine, nbLine,  numline,turbines, QTurb, TotalRealPower,
+                                     totalCalcP, totalCalcQ, CalculatedPowers);
+            }
 
-            // DPResourceAllocation solver(1.0f); // pas de 1 unité de débit
-            DPResourceAllocationFast solver(1.0f); // pas de 1 unité de débit
-            centrale.setSolver(&solver);
-
-
-        auto CalculatedPowers = centrale.CalculateDistributionAndPower(QTurb);
-        for (int i = 0; i < CalculatedPowers.size(); ++i) {
-            std::cout << "Turbine " << (i + 1) <<" Debit : "<< CalculatedPowers[i].first << " Power calc = " << CalculatedPowers[i].second
-                    << ", real Power = " << turbines[i].second << ", real Debit = " << turbines[i].first <<std::endl;
+            // std::cout << " CALC_H_CHUTE_NETTE : " << CALC_H_CHUTE_NETTE(N_Amont - CALC_LEVEL_AVAL(600), 140) << std::endl;
         }
-
-        // std::cout << " CALC_H_CHUTE_NETTE : " << CALC_H_CHUTE_NETTE(N_Amont - CALC_LEVEL_AVAL(600), 140) << std::endl;
-
-        std::cout << std::endl;
     }
 }
