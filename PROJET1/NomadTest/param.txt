@@ -1,0 +1,19 @@
+BB_EXE          NomadExec.exe
+
+DIMENSION      5
+
+BB_INPUT_TYPE   ( R R R R R )
+BB_OUTPUT_TYPE  OBJ EB
+
+# Bornes unitaires
+LOWER_BOUND     ( 0 0 0 0 0 )
+UPPER_BOUND     ( 160 160 160 160 160 )
+
+X0 ( 1 1 1 1 1 ) # starting point
+
+MAX_BB_EVAL       500
+
+DISPLAY_DEGREE 2
+DISPLAY_STATS BBE ( SOL ) OBJ
+
+STATS_FILE test.txt BBE ( SOL ) OBJ

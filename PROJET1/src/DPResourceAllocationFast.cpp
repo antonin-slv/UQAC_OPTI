@@ -59,7 +59,7 @@ public:
         }
 
         // ----------------- Backtracking
-        std::vector<std::pair<float, float>> results;
+        std::vector<std::pair<float, float>> results(m_functions.size());
         float currentRemainingRes = m_totalResource;
 
         currentRemainingRes = std::floor(currentRemainingRes / m_step) * m_step;
@@ -70,13 +70,10 @@ public:
             float chosenDebit = dpTable[i][rIdx].choiceMade;
             float gainObtained = m_functions[i](chosenDebit);
 
-            results.emplace_back(chosenDebit, gainObtained);
+            results[i] = {chosenDebit, gainObtained};
 
             currentRemainingRes -= chosenDebit;
         }
-
-        // Comme on a parcouru de i = N à 0, il faut remettre dans l'ordre
-        std::reverse(results.begin(), results.end());
 
         return results;
     }

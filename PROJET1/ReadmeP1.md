@@ -74,3 +74,10 @@ R-square        0.8004
 DFE         1.8471e+05
 Adj R-sq        0.8004
 RMSE            1.3342
+
+## NOMAD
+
+Commande de base pour optimiser un prog : 
+```
+"%NOMAD_HOME%\bin\nomad.exe" param.txt
+```

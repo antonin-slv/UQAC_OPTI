@@ -3,8 +3,14 @@
 #include <vector>
 #include <functional>
 #include <algorithm>
+#include <numeric>
+
 #include "Calculator.cpp"
 #include "ResourceAllocationSolver.cpp"
+
+
+#ifndef CENTRAL_CPP
+#define CENTRAL_CPP
 
 #define CALC_LEVEL_AVAL(DebitTotal) (2.805f * std::logf(DebitTotal) + 85.76f)
 #define PERTES_DE_CHARGE 0.000005f // soit 0.5 x 10^-5
@@ -116,6 +122,26 @@ public:
         return solver->allocateResources();
     }
 
+
+    VecDebitPower CalculatePowerGivenDistribution(std::vector<float> debitParTurbine)
+    {
+        if (debitParTurbine.size() != turbines.size()) {
+            return {};
+        }
+
+        float debitTot = std::accumulate(debitParTurbine.begin(), debitParTurbine.end(), 0.0f);
+        H_aval = CALC_LEVEL_AVAL(debitTot);
+        float HauteurDeChute = H_amont - H_aval;
+
+        VecDebitPower powers;
+        for (int i = 0; i < turbines.size(); ++i) {
+            float debit = debitParTurbine[i];
+            float power = turbines[i].calculate_power(HauteurDeChute, debit);
+            powers.emplace_back(debit, power);
+        }
+        return powers;
+    }
+
     bool lockTurbine(int index) {
         if (index >= 0 && index < turbines.size()) {
             turbines[index].locked = true;
@@ -211,3 +237,6 @@ public:
         AddTurbine(std::move(t5));
     }
 };
+
+
+#endif

@@ -25,11 +25,18 @@ add_executable(UqacOptiProjetHiv2026 PROJET1/Main.cpp
         PROJET1/src/Centrale.cpp
         PROJET1/src/DPResourceAllocation.cpp
         PROJET1/src/DPResourceAllocationFast.cpp
-        "PROJET1/src/ResourceAllocationSolver.cpp")
-
+        "PROJET1/src/ResourceAllocationSolver.cpp"
+        )
+add_executable(NomadExec PROJET1/NomadMain.cpp
+        PROJET1/src/Calculator.cpp
+        PROJET1/src/Centrale.cpp
+        PROJET1/src/DPResourceAllocation.cpp
+        PROJET1/src/DPResourceAllocationFast.cpp
+        "PROJET1/src/ResourceAllocationSolver.cpp"
+        )
 target_link_libraries(UqacOptiProjetHiv2026 PRIVATE OpenXLSX::OpenXLSX)
 target_compile_features(UqacOptiProjetHiv2026 PRIVATE cxx_std_17)
-
+target_compile_features(NomadExec PRIVATE cxx_std_17)
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
