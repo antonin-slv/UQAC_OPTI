@@ -1,9 +1,28 @@
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
+
 project(UQAC_OPTI)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_PREFIX_PATH "C:/DEV/Qt2/6.11.0/msvc2022_64")
+
+find_package(Qt6 REQUIRED COMPONENTS Quick)
+
+qt_standard_project_setup(REQUIRES 6.10)
+
+qt_add_executable(QTapp
+        PROJET1/src/MainQT.cpp
+)
+
+qt_add_qml_module(QTapp
+        URI UQAC_OPTI
+        QML_FILES
+        PROJET1/src/MainQT.qml
+        SOURCES PROJET1/src/centraleQTWrap.h
+)
+
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -61,6 +80,24 @@ target_compile_features(UqacOptiProjetHiv2026 PRIVATE cxx_std_17)
 target_compile_features(NomadExec PRIVATE cxx_std_17)
 target_link_libraries(NomadExec "C:/Program Files/DEV/nomad.3.9.1/bin/nomad.lib" )
 
+
+set_target_properties(QTapp PROPERTIES
+        WIN32_EXECUTABLE TRUE
+)
+
+target_link_libraries(QTapp
+        PRIVATE Qt6::Quick
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Quick
+        Qt6::Qml
+)
+
+install(TARGETS QTapp
+        BUNDLE DESTINATION .
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
 
 
 if (OPENMP_FOUND)
