@@ -81,3 +81,7 @@ Commande de base pour optimiser un prog :
 ```
 "%NOMAD_HOME%\bin\nomad.exe" param.txt
 ```
+```cmd
+cmd /V:ON /C "echo !TIME! & "%NOMAD_HOME%\bin\nomad.exe" param.txt & echo !TIME!"
+
+```

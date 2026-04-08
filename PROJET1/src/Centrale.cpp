@@ -1,4 +1,6 @@
-﻿#include <cmath>
+﻿#pragma once
+
+#include <cmath>
 #include <memory>
 #include <vector>
 #include <functional>
@@ -7,10 +9,6 @@
 
 #include "Calculator.cpp"
 #include "ResourceAllocationSolver.cpp"
-
-
-#ifndef CENTRAL_CPP
-#define CENTRAL_CPP
 
 #define CALC_LEVEL_AVAL(DebitTotal) (2.805f * std::logf(DebitTotal) + 85.76f)
 #define PERTES_DE_CHARGE 0.000005f // soit 0.5 x 10^-5
@@ -38,6 +36,10 @@ public:
     float calculate_power(float HauteurDeChute, float debit) {
         if (debit < 4.0f) {
             return 0.0f;
+        }
+
+        if (debit > maxDebit) {
+            debit = maxDebit; // on limite le débit à la capacité maximale de la turbine
         }
 
         // calcul de la hauteur de chute nette en tenant compte des pertes de charge
@@ -134,7 +136,7 @@ public:
         float HauteurDeChute = H_amont - H_aval;
 
         VecDebitPower powers;
-        for (int i = 0; i < turbines.size(); ++i) {
+        for (size_t i = 0; i < turbines.size(); ++i) {
             float debit = debitParTurbine[i];
             float power = turbines[i].calculate_power(HauteurDeChute, debit);
             powers.emplace_back(debit, power);
@@ -142,8 +144,8 @@ public:
         return powers;
     }
 
-    bool lockTurbine(int index) {
-        if (index >= 0 && index < turbines.size()) {
+    bool lockTurbine(size_t index) {
+        if (index < turbines.size()) {
             turbines[index].locked = true;
             return true;
         }
@@ -151,8 +153,8 @@ public:
         return false;
     }
 
-    bool unlockTurbine(int index) {
-        if (index >= 0 && index < turbines.size()) {
+    bool unlockTurbine(size_t index) {
+        if (index < turbines.size()) {
             turbines[index].locked = false;
             return true;
         }
@@ -237,6 +239,3 @@ public:
         AddTurbine(std::move(t5));
     }
 };
-
-
-#endif

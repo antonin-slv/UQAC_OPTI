@@ -47,7 +47,7 @@ public:
         //TODO(tester de limiter les états initiaux max)
 
 
-        for (int i = 0; i < m_functions.size() -1; ++i) {
+        for (size_t i = 0; i < m_functions.size() -1; ++i) {
             float Conso = m_bounds[i].first;
             while (Conso <= m_totalResource) {
                 dpTable[i].emplace_back(m_totalResource - Conso, std::vector<std::pair<float, float> >());
