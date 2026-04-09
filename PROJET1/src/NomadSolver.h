@@ -13,6 +13,10 @@
 class NomadRessourceAlloc : public ResourceAllocationSolver
 {
 public:
+    int max_eval_count = 500;
+    bool use_XTRM_barrier = true;
+
+
     NomadRessourceAlloc() = default;
 
     std::vector<std::pair<float, float>> allocateResources() override
@@ -31,7 +35,7 @@ public:
             params.set_DIMENSION(nb_fct_prod);
             std::vector<NOMAD::bb_output_type> bout(2);
             bout[0] = NOMAD::OBJ;
-            bout[1] = NOMAD::PB;
+            bout[1] = use_XTRM_barrier ?  NOMAD::EB : NOMAD::PB;
             params.set_SEED(0);
             params.set_BB_OUTPUT_TYPE(bout);
             params.set_DISPLAY_DEGREE(2);
@@ -40,8 +44,8 @@ public:
             params.set_INITIAL_MESH_SIZE(NOMAD::Point(5, 0.5));
             params.set_INITIAL_POLL_SIZE(NOMAD::Point(5, 0.1));
             */
-            NOMAD::Point lower_bound(0);
-            NOMAD::Point upper_bound(0);
+            NOMAD::Point lower_bound(nb_fct_prod);
+            NOMAD::Point upper_bound(nb_fct_prod);
             int i = 0;
             for (auto& [fst, snd] : m_bounds)
             {
@@ -53,7 +57,7 @@ public:
             params.set_LOWER_BOUND(lower_bound);
             params.set_UPPER_BOUND(upper_bound);
 
-            params.set_MAX_BB_EVAL(500);
+            params.set_MAX_BB_EVAL(max_eval_count);
             NOMAD::Point orig(5, 1.0);
             /*
             orig.set_coord(0, 0); // Débit initial pour la turbine 1

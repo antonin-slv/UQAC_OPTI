@@ -1,10 +1,8 @@
-﻿#include <cassert>
+﻿#pragma once
+#include <cassert>
 #include <vector>
 #include <functional>
 #include <algorithm>
-
-#ifndef RESOURCE_ALLOCATION_SOLVER_H
-#define RESOURCE_ALLOCATION_SOLVER_H
 
 class ResourceAllocationSolver {
 public:
@@ -32,5 +30,3 @@ public:
 
     std::vector<std::pair<float, float>> virtual allocateResources() = 0;
 };
-
-#endif //RESOURCE_ALLOCATION_SOLVER_H

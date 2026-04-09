@@ -1,10 +1,13 @@
+#include <QDirIterator>
+#include <QDebug>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QtQml/qqmlregistration.h>
 #include <QQmlContext>
 
 #include "src/centraleQTWrap.h"
-#include "src/DPResourceAllocationfast.cpp"
+#include "src/SolverManagerQt.h"
+//#include "PROJET1/src/SolverNomadQTWrapper.h"
 
 int main(int argc, char *argv[])
 {
@@ -14,13 +17,21 @@ int main(int argc, char *argv[])
     // 1. Instanciation du Backend
     // On le crée sur la pile (stack) ; il sera détruit proprement à la fin du main.
 
-    DPResourceAllocationFast solver = DPResourceAllocationFast(10.0f);
+    //NomadSolverWrapper nomadSolver;
+    SolverManager solverManager(nullptr);
 
     Centrale power_centrale;
     power_centrale.load5DefaultTurb();
     power_centrale.H_amont = 135.0f;
-    power_centrale.setSolver(&solver);
+    power_centrale.solver = solverManager.currentSolver()->getSolver();
+    QDirIterator it(":", QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        qDebug() << "Fichier QRC trouvé :" << it.next();
+    }
+
     CentraleQTWrapper manager(nullptr, &power_centrale);
+    manager.slvmanag = &solverManager;
+
 
     // 2. Configuration du moteur QML
     QQmlApplicationEngine engine;
@@ -29,6 +40,9 @@ int main(int argc, char *argv[])
     // Nous rendons l'instance 'manager' accessible sous le nom 'myModel' dans le monde QML.
     // On passe un pointeur (&manager).
     engine.rootContext()->setContextProperty("myModel", &manager);
+    engine.rootContext()->setContextProperty("solverManager", &solverManager);
+
+    qmlRegisterUncreatableType<SolverWrapper>("CentraleLib", 1, 0, "SolverWrapper", "Interface");
     // 4. Gestion de la sécurité au démarrage
     // On connecte le signal d'échec de création d'objet pour quitter proprement
     QObject::connect(

@@ -1,8 +1,11 @@
-﻿#include <functional>
+﻿#pragma once
+
+#include <functional>
 #include <vector>
 #include <cmath>
 #include <algorithm>
 #include <omp.h>
+
 #include "ResourceAllocationSolver.cpp"
 
 class DPResourceAllocationFast : public ResourceAllocationSolver {
@@ -15,6 +18,16 @@ private:
     float m_step;
 
 public:
+    [[nodiscard]] float get_step() const
+    {
+        return m_step;
+    }
+
+    void set_step(float step)
+    {
+        m_step = step;
+    }
+
     explicit DPResourceAllocationFast(const float step): m_step(step) {}
 
     /**

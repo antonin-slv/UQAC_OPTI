@@ -6,7 +6,10 @@
 #include <ostream>
 #include<QObject>
 #include<QAbstractListModel>
+
+
 #include "Centrale.cpp"
+#include "SolverManagerQt.h"
 
 class TurbineQTWrapper : public QObject {
     Q_OBJECT
@@ -43,7 +46,10 @@ private :
 
 class CentraleQTWrapper : public QAbstractListModel {
     Q_OBJECT
+    Q_PROPERTY(QVariantList opti_rslt READ results NOTIFY resultsChanged)
+
 public:
+    SolverManager * slvmanag;
 
     // Ajout du NameRole
     enum Roles {
@@ -53,9 +59,12 @@ public:
         NameRole
     };
 
+
     Q_INVOKABLE void calculerSynthese(double debitTotal, double hauteur) {
         std::cout <<"Hauteur amont :" << hauteur << std::endl;
         real_centrale->H_amont = static_cast<float>(hauteur);
+        real_centrale->solver = slvmanag->currentSolver()->getSolver();
+
 
         VecDebitPower distribution = real_centrale->CalculateDistributionAndPower(static_cast<float>(debitTotal));
         std::cout << "Distribution des débits et puissances :\n";
@@ -63,6 +72,15 @@ public:
             std::cout << "Turbine " << (i + 1) << ": Debit = " << distribution[i].first << " m3/s, Puissance = " << distribution[i].second << " MW\n";
         }
         std::cout << std::endl;
+
+        rslt_list.clear();
+        for(auto [fst, snd] : distribution) {
+            QVariantMap map;
+            map["debit"] = fst;
+            map["puissance"] = snd;
+            rslt_list.append(map);
+        }
+        emit resultsChanged();
     }
 
     explicit CentraleQTWrapper(QObject *parent = nullptr, Centrale *realCentrale = nullptr) : QAbstractListModel(parent) {
@@ -73,7 +91,7 @@ public:
     }
 
     // Indispensable : fait le pont entre les noms QML et les enums C++
-    QHash<int, QByteArray> roleNames() const override {
+    [[nodiscard]] QHash<int, QByteArray> roleNames() const override {
         QHash<int, QByteArray> roles;
         roles[ActiveRole] = "active";
         roles[MinRole] = "min";
@@ -82,21 +100,21 @@ public:
         return roles;
     }
 
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override {
+    [[nodiscard]] int rowCount(const QModelIndex &parent) const override {
         return m_turbines.size();
     }
 
-    QVariant data(const QModelIndex &index, int role) const override {
+    [[nodiscard]] QVariant data(const QModelIndex &index, int role) const override {
         if (!index.isValid() || index.row() >= m_turbines.size()) return {};
 
-        auto *t = m_turbines[index.row()];
+        const auto *t = m_turbines[index.row()];
         switch (role) {
         case ActiveRole: return t->active();
         case MinRole:    return t->min();
         case MaxRole:    return t->max();
         case NameRole:   return QString("Turbine %1").arg(index.row() + 1);
+        default: return {};
         }
-        return {};
     }
 
     // Indispensable pour l'écriture (quand on change une valeur dans l'UI)
@@ -104,25 +122,31 @@ public:
         if (!index.isValid() || index.row() >= m_turbines.size()) return false;
 
         auto *t = m_turbines[index.row()];
-        bool changed = false;
 
         switch (role) {
-        case ActiveRole: t->setActive(value.toBool()); changed = true; break;
-        case MinRole:    t->setMin(value.toDouble());    changed = true; break;
-        case MaxRole:    t->setMax(value.toDouble());    changed = true; break;
+        case ActiveRole: t->setActive(value.toBool()); break;
+        case MinRole:    t->setMin(value.toDouble()); break;
+        case MaxRole:    t->setMax(value.toDouble()); break;
+        default: return false;
         }
 
-        if (changed) {
-            // On prévient l'UI que la donnée a changé
-            emit dataChanged(index, index, {role});
-            return true;
-        }
-        return false;
+        emit dataChanged(index, index, {role});
+        return true;
+
     }
+
+    [[nodiscard]] QVariantList results() const {
+        return rslt_list;
+    }
+
+    signals:
+    void resultsChanged();
 
 private:
     QList<TurbineQTWrapper*> m_turbines;
     Centrale * real_centrale;
+    QVariantList rslt_list;
+
 };
 
 #endif // TURBINEQT_H
