@@ -3,7 +3,8 @@
 #include <QtQml/qqmlregistration.h>
 #include <QQmlContext>
 
-#include "centraleQTWrap.h"
+#include "src/centraleQTWrap.h"
+#include "src/DPResourceAllocationfast.cpp"
 
 int main(int argc, char *argv[])
 {
@@ -12,7 +13,14 @@ int main(int argc, char *argv[])
 
     // 1. Instanciation du Backend
     // On le crée sur la pile (stack) ; il sera détruit proprement à la fin du main.
-    CentraleQTWrapper manager;
+
+    DPResourceAllocationFast solver = DPResourceAllocationFast(10.0f);
+
+    Centrale power_centrale;
+    power_centrale.load5DefaultTurb();
+    power_centrale.H_amont = 135.0f;
+    power_centrale.setSolver(&solver);
+    CentraleQTWrapper manager(nullptr, &power_centrale);
 
     // 2. Configuration du moteur QML
     QQmlApplicationEngine engine;

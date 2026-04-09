@@ -136,13 +136,20 @@ Window {
                 }
 
                 onClicked: {
-                        // On récupère les valeurs des TextField par leur ID
-                        // et on appelle la fonction C++
-                        myModel.calculerSynthese(
-                            parseFloat(totalFlow.text),
-                            parseFloat(headHeight.text)
-                        )
+                    console.log("Calcul en cours...");
+                    let d = parseFloat(totalFlow.text);
+                    let h = parseFloat(headHeight.text);
+
+                    if (isNaN(d) || isNaN(h)) {
+                        console.error("Erreur : Valeurs non numériques !");
+                        return;
                     }
+
+                    console.log("Appel C++ avec :", d, h);
+                    // On récupère les valeurs des TextField par leur ID
+                    // et on appelle la fonction C++
+                    myModel.calculerSynthese(d,h)
+                }
             }
         }
     }

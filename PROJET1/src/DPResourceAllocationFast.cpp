@@ -32,10 +32,17 @@ public:
         const int nbSteps = static_cast<int>(m_totalResource / m_step) + 1;
         std::vector<std::vector<Cell>> dpTable(m_functions.size(), std::vector<Cell>(nbSteps));
 
+        const float NEG_INF = -1e15f; // Plus propre qu'un chiffre au hasard
+        float sumMin = 0;
         for (int i = 0; i < m_functions.size(); ++i) {  // i : etapes (0 à nombre de turbines)
+            sumMin += m_bounds[i].first;
             #pragma omp parallel for
             for (int r = 0; r < nbSteps; ++r) {         // r : etat (ressource restante)
                 float availableDebit = m_step * static_cast<float>(r);
+
+                dpTable[i][r].bestGain = NEG_INF;
+                // Si la ressource totale ne couvre même pas le min des turbines 0 à i
+                if (availableDebit < sumMin) continue;
 
                 // tous les choix
                 const float minB = m_bounds[i].first;
@@ -47,7 +54,9 @@ public:
 
                     if (i > 0) {
                         const int remainingIdx = std::lround( (availableDebit - choice) / m_step);
-                        totalGain += dpTable[i-1][remainingIdx].bestGain;
+                        float prevGain = dpTable[i-1][remainingIdx].bestGain;
+                        if (prevGain <= NEG_INF) continue; // État précédent impossible
+                        totalGain += prevGain;
                     }
 
                     if (totalGain > dpTable[i][r].bestGain) {

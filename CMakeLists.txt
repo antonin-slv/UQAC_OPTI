@@ -13,13 +13,14 @@ find_package(Qt6 REQUIRED COMPONENTS Quick)
 qt_standard_project_setup(REQUIRES 6.10)
 
 qt_add_executable(QTapp
-        PROJET1/src/MainQT.cpp
+        PROJET1/MainQT.cpp
+        PROJET1/src/NomadSolver.cpp
 )
 
 qt_add_qml_module(QTapp
         URI UQAC_OPTI
         QML_FILES
-        PROJET1/src/MainQT.qml
+        PROJET1/MainQT.qml
         SOURCES PROJET1/src/centraleQTWrap.h
 )
 
@@ -91,6 +92,7 @@ target_link_libraries(QTapp
         Qt6::Gui
         Qt6::Quick
         Qt6::Qml
+        "C:/Program Files/DEV/nomad.3.9.1/bin/nomad.lib"
 )
 
 install(TARGETS QTapp
@@ -128,10 +130,10 @@ if(SIGNTOOL_EXECUTABLE)
     set(CERTIFICATE_PASSWORD "")
 
     # 3. Commande de signature après le build
-    add_custom_command(TARGET NomadExec POST_BUILD
+    add_custom_command(TARGET QTapp POST_BUILD
             COMMAND "${SIGNTOOL_EXECUTABLE}" sign /a /s My /n "${CERTIFICATE_PATH}"
             /fd SHA256
-            /v "$<TARGET_FILE:NomadExec>"
+            /v "$<TARGET_FILE:QTapp>"
             COMMENT "Signature de l'exécutable NomadExec avec Signtool..."
             VERBATIM
     )

@@ -6,7 +6,7 @@
 #include <functional>
 #include <algorithm>
 #include <numeric>
-
+#include <iostream>
 #include "Calculator.cpp"
 #include "ResourceAllocationSolver.cpp"
 
@@ -117,10 +117,12 @@ public:
 
             TurbineBounds.emplace_back(turbine.locked ? 0.0f : turbine.minDebit,
                                        turbine.locked ? 0.0f : turbine.maxDebit);
+
+            std::cout << "bounds " << TurbineBounds.back().first << " - " << TurbineBounds.back().second << "\n";
         }
-
+        std::cout << "Hauteur de chute : " << HauteurDeChute << " m\n";
         solver->setParameters(std::move(PowerCalculationFunctions), TurbineBounds, debitTotal);
-
+        std::cout << "Débit total à répartir : " << debitTotal << " m3/s\n";
         return solver->allocateResources();
     }
 

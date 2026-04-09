@@ -2,8 +2,11 @@
 #define TURBINEQT_H
 
 
+#include <iostream>
+#include <ostream>
 #include<QObject>
 #include<QAbstractListModel>
+#include "Centrale.cpp"
 
 class TurbineQTWrapper : public QObject {
     Q_OBJECT
@@ -13,33 +16,35 @@ class TurbineQTWrapper : public QObject {
     Q_PROPERTY(double max READ max WRITE setMax NOTIFY maxChanged)
 
 public:
-    explicit TurbineQTWrapper(double min = 0, double max = 160, QObject *parent = nullptr)
-        : QObject(parent), m_active(true), m_min(min), m_max(max) {}
+    explicit TurbineQTWrapper(Turbine * org_turb, QObject *parent = nullptr)
+        : QObject(parent), real_turbine(org_turb) {}
 
-    bool active() const { return m_active; }
-    double min() const { return m_min; }
-    double max() const { return m_max; }
+    bool active() const { return !real_turbine->locked; }
+    double min() const { return real_turbine->minDebit; }
+    double max() const { return real_turbine->maxDebit; }
 
 public slots: // Les slots sont appelables depuis QML
-    void setActive(bool a) { if (m_active != a) { m_active = a; emit activeChanged(); } }
-    void setMin(double m) { if (m_min != m) { m_min = m; emit minChanged(); } }
-    void setMax(double m) { if (m_max != m) { m_max = m; emit maxChanged(); } }
+    void setActive(bool a) { if (real_turbine->locked == a)
+        { real_turbine->locked = !a; emit activeChanged(); } }
+    void setMin(double m) { if (real_turbine->minDebit != m)
+        { real_turbine->minDebit = m; emit minChanged(); } }
+    void setMax(double m) { if (real_turbine->maxDebit != m)
+        { real_turbine->maxDebit = m; emit maxChanged(); } }
 
 signals:
     void activeChanged();
     void minChanged();
     void maxChanged();
 
-private:
-    bool m_active = true;
-    double m_min = 0;
-    double m_max = 160;
+private :
+    Turbine * real_turbine;
 };
 
 
 class CentraleQTWrapper : public QAbstractListModel {
     Q_OBJECT
 public:
+
     // Ajout du NameRole
     enum Roles {
         ActiveRole = Qt::UserRole + 1,
@@ -49,17 +54,22 @@ public:
     };
 
     Q_INVOKABLE void calculerSynthese(double debitTotal, double hauteur) {
-        qDebug() << "Calcul en cours...";
-        qDebug() << "Débit:" << debitTotal << "m3/s | Hauteur:" << hauteur << "m";
+        std::cout <<"Hauteur amont :" << hauteur << std::endl;
+        real_centrale->H_amont = static_cast<float>(hauteur);
 
-        // C'est ici que vous mettriez votre algorithme complexe
-        double puissanceTheorique = debitTotal * hauteur * 9.81 * 0.85; // rho * g * h * rendement
-
-        qDebug() << "Puissance estimée :" << puissanceTheorique << "kW";
+        VecDebitPower distribution = real_centrale->CalculateDistributionAndPower(static_cast<float>(debitTotal));
+        std::cout << "Distribution des débits et puissances :\n";
+        for (size_t i = 0; i < distribution.size(); ++i) {
+            std::cout << "Turbine " << (i + 1) << ": Debit = " << distribution[i].first << " m3/s, Puissance = " << distribution[i].second << " MW\n";
+        }
+        std::cout << std::endl;
     }
 
-    explicit CentraleQTWrapper(QObject *parent = nullptr) : QAbstractListModel(parent) {
-        for(int i=0; i<5; ++i) m_turbines.append(new TurbineQTWrapper(0.0, 160.0, this));
+    explicit CentraleQTWrapper(QObject *parent = nullptr, Centrale *realCentrale = nullptr) : QAbstractListModel(parent) {
+        real_centrale = realCentrale;
+        for(auto& turbine : real_centrale->turbines) {
+            m_turbines.append(new TurbineQTWrapper(&turbine, this));
+        }
     }
 
     // Indispensable : fait le pont entre les noms QML et les enums C++
@@ -112,6 +122,7 @@ public:
 
 private:
     QList<TurbineQTWrapper*> m_turbines;
+    Centrale * real_centrale;
 };
 
 #endif // TURBINEQT_H

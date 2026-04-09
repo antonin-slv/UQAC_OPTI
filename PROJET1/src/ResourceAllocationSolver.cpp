@@ -9,9 +9,9 @@
 class ResourceAllocationSolver {
 public:
     virtual ~ResourceAllocationSolver() = default;
-
+    using ProdFunction = std::function<float(float)>;
     /* fonction permettant de calculer le gain en fonction de la ressource allouée. */
-    std::vector<std::function<float(float)>> m_functions;
+    std::vector<ProdFunction> m_functions;
 
     /* les limites inférieure et supérieure de la ressource allouée pour chaque fonction de gain. */
     std::vector<std::pair<float, float>> m_bounds;
@@ -20,7 +20,7 @@ public:
     float m_totalResource;
 
     void setParameters(
-        std::vector<std::function<float(float)>> functions,
+        std::vector<ProdFunction> functions,
         std::vector<std::pair<float, float>> bounds,
         float totalResource) {
         m_functions = std::move(functions);
