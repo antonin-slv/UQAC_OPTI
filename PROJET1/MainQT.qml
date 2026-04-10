@@ -61,11 +61,11 @@ Window {
                     // --- 1. SÉCURITÉ ANTI-COLLISION ---
                     // On pousse tout le bloc vers le bas par rapport au bord de la fenêtre
                     Layout.topMargin: 20
-
+                    Layout.rightMargin: 0
                     // On crée un espace en haut à l'intérieur pour accueillir le titre sans chevaucher le Loader
                     topPadding: labelItem.height / 1.5
                     leftPadding: 10
-                    rightPadding: 10
+                    rightPadding: -50
                     bottomPadding: 10
 
                     // --- 2. LE TITRE (DÉSORMAIS À L'INTÉRIEUR) ---
@@ -98,6 +98,7 @@ Window {
                     // --- 3. LE CONTENU (LOADER) ---
                     // Il commencera automatiquement après le topPadding
                     Loader {
+
                         id: paramLoader
                         Layout.fillWidth: true
                         source: solverManager.currentSolver ? solverManager.currentSolver.settingsComponent : ""

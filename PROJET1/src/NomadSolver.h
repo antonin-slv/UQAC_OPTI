@@ -69,10 +69,9 @@ public:
             params.set_UPPER_BOUND(upper_bound);
 
             params.set_MAX_BB_EVAL(max_eval_count);
-            NOMAD::Point orig(nb_fct_prod);
-            double startFlow = m_totalResource / (float) nb_fct_prod;
-            for(int i=0; i<nb_fct_prod; ++i) {
-                orig.set_coord(i, startFlow);
+            NOMAD::Point orig(initial_x.size());
+            for(int i=0; i<initial_x.size(); ++i) {
+                orig.set_coord(i, initial_x[i]);
             }
             params.set_X0(orig);
             /*
@@ -127,7 +126,19 @@ public:
             std::cerr << "Erreur lors de l'exécution de NOMAD : " << e.what() << std::endl;
             return {};
         }
-    };
+    }
+
+    vector<double> initial_x = std::vector<double>(5, 0.0); // Point de départ initial pour les débits des turbines
+
+    void set_initial_x(const vector<double>& start)
+    {
+        initial_x = start;
+    }
+
+    [[nodiscard]] vector<double> get_initial_x() const
+    {
+        return initial_x;
+    }
 #endif
 };
 

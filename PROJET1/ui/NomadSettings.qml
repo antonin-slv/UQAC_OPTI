@@ -84,7 +84,36 @@ ColumnLayout {
             }
         }
     }
+    GroupBox {
+        title: "Point de départ (X0)"
+        Layout.fillWidth: true
 
-    // Un petit espaceur en bas
-    Item { Layout.fillHeight: true }
+        Flow { // Flow permet de passer à la ligne si trop de turbines
+            anchors.right: parent.right
+            width: parent.width
+            spacing: 1
+
+            Repeater {
+                model: myModel.rowCount() // On prend le nombre de turbines du modèle principal
+
+                RowLayout {
+                    spacing:0
+                    Label { text: " T" + (index + 1)
+                    rightPadding:0
+                    }
+                    TextField {
+                        placeholderText: "0.0"
+                        Layout.preferredWidth: 30
+                        text: solver.initialX[index] || "1.0"
+                        validator: DoubleValidator { bottom: 0; locale: "C" }
+                        onEditingFinished: {
+                            let tmp = solver.initialX
+                            tmp[index] = Number(text)
+                            solver.initialX = tmp // On réassigne pour déclencher le signal notify
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
