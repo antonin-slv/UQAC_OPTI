@@ -6,19 +6,28 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#ifndef Q_MOC_RUN
 #include "NomadEvaluator.hpp"
 #include "nomad.hpp"
+#endif
+
 #include "ResourceAllocationSolver.cpp"
 
 class NomadRessourceAlloc : public ResourceAllocationSolver
 {
 public:
-    int max_eval_count = 500;
+    int max_eval_count = 1000;
     bool use_XTRM_barrier = true;
-
+    double min_mesh_size = 0.001;
+    double initial_mesh_size = 1.0;
 
     NomadRessourceAlloc() = default;
-
+#ifdef Q_MOC_RUN
+    std::vector<std::pair<float, float>> allocateResources() override {
+        std::cerr << "NOMAD n'est pas disponible dans cet environnement de compilation." << std::endl;
+        return {};
+    }
+#else
     std::vector<std::pair<float, float>> allocateResources() override
     {
         NOMAD::Display out(std::cout);
@@ -40,6 +49,8 @@ public:
             params.set_BB_OUTPUT_TYPE(bout);
             params.set_DISPLAY_DEGREE(2);
             params.set_DISPLAY_STATS("BBE ( SOL ) OBJ");
+            params.set_MIN_MESH_SIZE(min_mesh_size);
+            params.set_INITIAL_MESH_SIZE(initial_mesh_size);
             /*
             params.set_INITIAL_MESH_SIZE(NOMAD::Point(5, 0.5));
             params.set_INITIAL_POLL_SIZE(NOMAD::Point(5, 0.1));
@@ -58,7 +69,12 @@ public:
             params.set_UPPER_BOUND(upper_bound);
 
             params.set_MAX_BB_EVAL(max_eval_count);
-            NOMAD::Point orig(5, 1.0);
+            NOMAD::Point orig(nb_fct_prod);
+            double startFlow = m_totalResource / (float) nb_fct_prod;
+            for(int i=0; i<nb_fct_prod; ++i) {
+                orig.set_coord(i, startFlow);
+            }
+            params.set_X0(orig);
             /*
             orig.set_coord(0, 0); // Débit initial pour la turbine 1
             orig.set_coord(1, 147.719); // Débit initial pour la turbine
@@ -87,11 +103,6 @@ public:
                 return {};
             }
 
-            for (auto obj : params.get_index_obj())
-            {
-                std::cout << "Objectif à optimiser : " << obj << std::endl;
-            }
-
             NomadEvaluator ev(params, m_totalResource, m_functions);
 
             NOMAD::Mads mads(params, &ev);
@@ -117,5 +128,6 @@ public:
             return {};
         }
     };
+#endif
 };
 

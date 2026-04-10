@@ -41,6 +41,7 @@ qt_add_qml_module(QTapp
         QML_FILES
             PROJET1/MainQT.qml
             PROJET1/ui/DPSettings.qml
+            PROJET1/ui/NomadSettings.qml
         SOURCES
             PROJET1/src/centraleQTWrap.h
             PROJET1/src/SolverQtWrappers.h
@@ -80,6 +81,13 @@ add_executable(UqacOptiProjetHiv2026 PROJET1/Main.cpp
         )
 #target_link_libraries(UqacOptiProjetHiv2026 PRIVATE OpenXLSX::OpenXLSX)
 
+add_executable(NomadOnly PROJET1/NomadMain.cpp)
+
+target_link_libraries(NomadOnly PRIVATE
+        "C:/Program Files/DEV/nomad.3.9.1/bin/nomad.lib"
+)
+
+
 target_link_libraries(QTapp PRIVATE
         Qt6::Quick
         Qt6::Core
@@ -88,7 +96,9 @@ target_link_libraries(QTapp PRIVATE
         "C:/Program Files/DEV/nomad.3.9.1/bin/nomad.lib"
 )
 
-set_target_properties(QTapp PROPERTIES WIN32_EXECUTABLE TRUE )
+
+
+#set_target_properties(QTapp PROPERTIES WIN32_EXECUTABLE FALSE )
 
 install(TARGETS QTapp
         BUNDLE DESTINATION .
@@ -123,6 +133,22 @@ else()
 endif()
 
 add_custom_command(TARGET QTapp POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${NOMAD_HOME_PATH}/bin/nomad.dll"
+        $<TARGET_FILE_DIR:QTapp>
+
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${NOMAD_HOME_PATH}/bin/sgtelib.dll"
+        $<TARGET_FILE_DIR:QTapp>
+)
+add_custom_command(TARGET QTapp POST_BUILD
+        COMMAND "${WINDEPLOYQT_EXECUTABLE}"
+        --verbose 0
+        --qmldir "${CMAKE_CURRENT_SOURCE_DIR}/PROJET1"
+        "$<TARGET_FILE:QTapp>"
+        COMMENT "Déploiement des dépendances Qt via windeployqt..."
+)
+add_custom_command(TARGET NomadOnly POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${NOMAD_HOME_PATH}/bin/nomad.dll"
         $<TARGET_FILE_DIR:QTapp>

@@ -32,6 +32,7 @@ Window {
                         Label { text: "Débit total (m³/s) :" }
                         TextField {
                             id: totalFlow
+                            text: "555.0"
                             placeholderText: "0.0"
                             validator: DoubleValidator {
                                 bottom: 0
@@ -44,6 +45,7 @@ Window {
                         TextField {
                             id: headHeight
                             placeholderText: "0.0"
+                            text: "135.0"
                             validator: DoubleValidator { bottom: 0
                                 decimals: 3 // On autorise jusqu'à 3 décimales
                                 notation: DoubleValidator.StandardNotation
@@ -53,47 +55,51 @@ Window {
                     }
                 }
                 GroupBox {
+                    id: control
                     Layout.fillWidth: true
-                    bottomPadding : 15
-                    topPadding : 15
 
-                    // On remplace le titre textuel par un composant complexe
+                    // --- 1. SÉCURITÉ ANTI-COLLISION ---
+                    // On pousse tout le bloc vers le bas par rapport au bord de la fenêtre
+                    Layout.topMargin: 20
+
+                    // On crée un espace en haut à l'intérieur pour accueillir le titre sans chevaucher le Loader
+                    topPadding: labelItem.height / 1.5
+                    leftPadding: 10
+                    rightPadding: 10
+                    bottomPadding: 10
+
+                    // --- 2. LE TITRE (DÉSORMAIS À L'INTÉRIEUR) ---
                     label: RowLayout {
-                        width: parent.width
-                        spacing: 10
-                        // On ajuste les marges pour que ça s'aligne bien avec le cadre
+                        id: labelItem
+                        width: control.availableWidth
                         x: 10
-                        y: -15
+                        y: -16
+                        spacing: 10
 
                         Label {
                             text: "Configuration via :"
                             font.bold: true
                             color: "#333"
+                            verticalAlignment: Text.AlignVCenter
                         }
 
                         ComboBox {
                             id: algoCombo
                             model: solverManager.availableSolvers
                             textRole: "name"
-                            currentIndex: 0 // Par défaut sur le premier
-
-                            // On réduit un peu la taille pour que ça rentre bien dans l'en-tête
+                            currentIndex: 0
                             Layout.preferredHeight: 30
                             Layout.preferredWidth: 200
-
+                            flat: true // Plus élégant à l'intérieur d'un cadre
                             onCurrentIndexChanged: solverManager.setSolverIndex(currentIndex)
-
-                            // Design plus discret pour l'en-tête
-                            flat: true
                         }
                     }
 
-                    // --- CONTENU DU GROUPE ---
+                    // --- 3. LE CONTENU (LOADER) ---
+                    // Il commencera automatiquement après le topPadding
                     Loader {
-
                         id: paramLoader
                         Layout.fillWidth: true
-                        // On s'assure que le chemin est correct selon ton architecture module
                         source: solverManager.currentSolver ? solverManager.currentSolver.settingsComponent : ""
 
                         onLoaded: {

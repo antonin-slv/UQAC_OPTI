@@ -2,7 +2,7 @@
 #include <QList>
 #include <QObject>
 
-//#include "SolverNomadQTWrapper.h"
+#include "SolverNomadQTWrapper.h"
 #include "SolverQtWrappers.h"
 
 class SolverManager : public QObject
@@ -62,10 +62,10 @@ private:
 inline SolverManager::SolverManager(QObject *parent) : QObject(parent) {
     // 1. Instanciation des solveurs disponibles
     auto* dp = new DPSolverWrapper(this);
-    //auto* nomad = new NomadSolverWrapper(this);
+    auto* nomad = new NomadSolverWrapper(this);
 
     m_solvers.append(dp);
-    //m_solvers.append(nomad);
+    m_solvers.append(nomad);
 
     // 2. Sélection par défaut
     m_current = dp;

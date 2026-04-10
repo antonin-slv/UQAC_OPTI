@@ -117,8 +117,6 @@ public:
 
             TurbineBounds.emplace_back(turbine.locked ? 0.0f : turbine.minDebit,
                                        turbine.locked ? 0.0f : turbine.maxDebit);
-
-            std::cout << "bounds " << TurbineBounds.back().first << " - " << TurbineBounds.back().second << "\n";
         }
         std::cout << "Hauteur de chute : " << HauteurDeChute << " m\n";
         solver->setParameters(std::move(PowerCalculationFunctions), TurbineBounds, debitTotal);

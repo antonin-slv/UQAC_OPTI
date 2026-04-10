@@ -9,6 +9,8 @@
 #include "src/SolverManagerQt.h"
 //#include "PROJET1/src/SolverNomadQTWrapper.h"
 
+#include "SolverNomadQTWrapper.h"
+
 int main(int argc, char *argv[])
 {
     // Indispensable pour la haute densité de pixels (écrans 4K)
@@ -20,10 +22,12 @@ int main(int argc, char *argv[])
     //NomadSolverWrapper nomadSolver;
     SolverManager solverManager(nullptr);
 
+    NomadSolverWrapper NomadSolverWrapper(&solverManager);
+
     Centrale power_centrale;
     power_centrale.load5DefaultTurb();
     power_centrale.H_amont = 135.0f;
-    power_centrale.solver = solverManager.currentSolver()->getSolver();
+    power_centrale.solver = NomadSolverWrapper.getSolver();
     QDirIterator it(":", QDirIterator::Subdirectories);
     while (it.hasNext()) {
         qDebug() << "Fichier QRC trouvé :" << it.next();
