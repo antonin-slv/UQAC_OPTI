@@ -11,7 +11,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_PREFIX_PATH "C:/DEV/Qt2/6.11.0/msvc2022_64")
 
 
-find_package(Qt6 REQUIRED COMPONENTS Quick)
+find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2)
 qt_standard_project_setup(REQUIRES 6.10)
 
 set(NOMAD_HOME_PATH $ENV{NOMAD_HOME})
@@ -93,6 +93,7 @@ target_link_libraries(QTapp PRIVATE
         Qt6::Core
         Qt6::Gui
         Qt6::Qml
+        Qt6::QuickControls2
         "C:/Program Files/DEV/nomad.3.9.1/bin/nomad.lib"
 )
 

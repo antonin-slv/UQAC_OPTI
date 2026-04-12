@@ -3,11 +3,13 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 Window {
+    readonly property bool isDarkMode: Application.styleHints.colorScheme === Qt.ColorScheme.Dark
+
     width: 800
     height: 600
     visible: true
     title: qsTr("Gestion Centrale Hydraulique")
-
+    color : isDarkMode ? "#0f0f0f" : "#f0f0f0"
     ScrollView {
         anchors.fill: parent
         contentWidth: availableWidth
@@ -79,7 +81,6 @@ Window {
                         Label {
                             text: "Configuration via :"
                             font.bold: true
-                            color: "#333"
                             verticalAlignment: Text.AlignVCenter
                         }
 
@@ -116,7 +117,6 @@ Window {
                 text: "Configuration des Turbines"
                 font.bold: true
                 font.pointSize: 14
-                color : "#333"
             }
 
             // On utilise un Repeater pour générer les 5 turbines
@@ -125,14 +125,13 @@ Window {
 
                 delegate: Frame {
                     Layout.fillWidth: true
-                    padding: 0
-                    bottomPadding : 15
                     Layout.preferredHeight: 40
-
+                    padding : 0
+                    leftPadding :15
                     background: Rectangle {
-                        color: "white"
                         radius: 5
                         border.color: "#dcdcdc"
+                        color : isDarkMode ?  "#111111" : "#f6f6f6"
 
                     }
 
@@ -145,7 +144,9 @@ Window {
                         anchors.margins: 0
 
 
+
                         RowLayout {
+
                             // --- SECTION CONFIGURATION (ENTRÉES) ---
                             Label {
                                 text: model.name
@@ -166,15 +167,18 @@ Window {
                             RowLayout {
                                 spacing: 5
                                 enabled: activeCheck.checked
-                                Label { text: "Min:"; font.pixelSize: 11; color: "gray" }
-                                TextField {
+                                Label { text: "Min:"; font.pixelSize: 11;}
+                                TextField { Layout.preferredHeight: 30
+                                    font.pointSize: 10
                                     text: model.min
                                     Layout.preferredWidth: 50
                                     validator: DoubleValidator { bottom: 0; top: 1000 }
                                     onEditingFinished: model.min = parseFloat(text)
                                 }
-                                Label { text: "Max:"; font.pixelSize: 11; color: "gray" }
-                                TextField {
+                                Label { text: "Max:"; font.pixelSize: 11;}
+                                TextField { Layout.preferredHeight: 30
+                                    font.pointSize: 10
+                                    //on réduit la taille du champ
                                     text: model.max
                                     Layout.preferredWidth: 50
                                     validator: DoubleValidator { bottom: 0; top: 1000 }
@@ -197,7 +201,7 @@ Window {
                             // Affichage du débit optimisé
                             ColumnLayout {
                                 spacing: 0
-                                Label { text: "Débit optimisé"; font.pixelSize: 7; color: "#666" }
+                                Label { text: "Débit optimisé"; font.pixelSize: 7; }
                                 Label {
                                     // Sécurité : on vérifie si la liste results est assez grande
                                     property var result: myModel.opti_rslt[index]
@@ -212,7 +216,7 @@ Window {
                             // Affichage de la puissance calculée
                             ColumnLayout {
                                 spacing: 0
-                                Label { text: "Puissance"; font.pixelSize: 7; color: "#666" }
+                                Label { text: "Puissance"; font.pixelSize: 7; }
                                 Label {
                                     property var result: myModel.opti_rslt[index]
                                     text: result ? result.puissance.toFixed(2) + " MW" : "--"
@@ -266,7 +270,7 @@ Window {
 
                 ColumnLayout {
                     spacing: 0
-                    Label { text: "Débit consommé"; font.pixelSize: 10; color: "#666" }
+                    Label { text: "Débit consommé"; font.pixelSize: 10;}
                     Label {
                         // Sécurité : on vérifie si la liste results est assez grande
                         text:  {
@@ -290,7 +294,7 @@ Window {
                 // Affichage de la puissance calculée
                 ColumnLayout {
                     spacing: 0
-                    Label { text: "Puissance totale"; font.pixelSize: 10; color: "#666" }
+                    Label { text: "Puissance totale"; font.pixelSize: 10 }
                     Label {
                         property var result: myModel.opti_rslt.length > 0 ? myModel.opti_rslt[0] : null
                         text:  {

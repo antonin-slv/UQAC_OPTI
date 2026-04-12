@@ -9,7 +9,7 @@ ColumnLayout {
 
     // --- Budget d'itérations ---
     RowLayout {
-        Label { text: "Budget d'itérations :"; Layout.fillWidth: true }
+        Label { text: "iter. max :"; Layout.fillWidth: true }
         Slider {
             id: evalSlider
             from: 50; to: 5000; stepSize: 50
@@ -85,8 +85,18 @@ ColumnLayout {
         }
     }
     GroupBox {
-        title: "Point de départ (X0)"
         Layout.fillWidth: true
+        topPadding : labelItem.height * 2
+        label: RowLayout {
+            id: labelItem
+            width: control.availableWidth
+            y : labelItem.height / 2
+            Label {
+                text: "Point de départ (m³/s) :"
+                font.bold: true
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
 
         Flow { // Flow permet de passer à la ligne si trop de turbines
             anchors.right: parent.right

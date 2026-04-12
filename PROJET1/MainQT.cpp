@@ -2,12 +2,11 @@
 #include <QDebug>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QtQml/qqmlregistration.h>
 #include <QQmlContext>
-
+#include <QQuickStyle>
+#include <QPalette>
 #include "src/centraleQTWrap.h"
 #include "src/SolverManagerQt.h"
-//#include "PROJET1/src/SolverNomadQTWrapper.h"
 
 #include "SolverNomadQTWrapper.h"
 
@@ -16,6 +15,7 @@ int main(int argc, char *argv[])
     // Indispensable pour la haute densité de pixels (écrans 4K)
     QGuiApplication app(argc, argv);
 
+    QQuickStyle::setStyle("Fusion"); // Choix du thème (optionnel)
     // 1. Instanciation du Backend
     // On le crée sur la pile (stack) ; il sera détruit proprement à la fin du main.
 
@@ -28,10 +28,6 @@ int main(int argc, char *argv[])
     power_centrale.load5DefaultTurb();
     power_centrale.H_amont = 135.0f;
     power_centrale.solver = NomadSolverWrapper.getSolver();
-    QDirIterator it(":", QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        qDebug() << "Fichier QRC trouvé :" << it.next();
-    }
 
     CentraleQTWrapper manager(nullptr, &power_centrale);
     manager.slvmanag = &solverManager;
