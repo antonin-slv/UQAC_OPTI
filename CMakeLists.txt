@@ -81,13 +81,6 @@ add_executable(UqacOptiProjetHiv2026 PROJET1/Main.cpp
         )
 #target_link_libraries(UqacOptiProjetHiv2026 PRIVATE OpenXLSX::OpenXLSX)
 
-add_executable(NomadOnly PROJET1/NomadMain.cpp)
-
-target_link_libraries(NomadOnly PRIVATE
-        "C:/Program Files/DEV/nomad.3.9.1/bin/nomad.lib"
-)
-
-
 target_link_libraries(QTapp PRIVATE
         Qt6::Quick
         Qt6::Core
@@ -96,8 +89,6 @@ target_link_libraries(QTapp PRIVATE
         Qt6::QuickControls2
         "C:/Program Files/DEV/nomad.3.9.1/bin/nomad.lib"
 )
-
-
 
 #set_target_properties(QTapp PROPERTIES WIN32_EXECUTABLE FALSE )
 
@@ -142,6 +133,8 @@ add_custom_command(TARGET QTapp POST_BUILD
         "${NOMAD_HOME_PATH}/bin/sgtelib.dll"
         $<TARGET_FILE_DIR:QTapp>
 )
+
+###
 add_custom_command(TARGET QTapp POST_BUILD
         COMMAND "${WINDEPLOYQT_EXECUTABLE}"
         --verbose 0
@@ -149,12 +142,42 @@ add_custom_command(TARGET QTapp POST_BUILD
         "$<TARGET_FILE:QTapp>"
         COMMENT "Déploiement des dépendances Qt via windeployqt..."
 )
-add_custom_command(TARGET NomadOnly POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${NOMAD_HOME_PATH}/bin/nomad.dll"
-        $<TARGET_FILE_DIR:QTapp>
 
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${NOMAD_HOME_PATH}/bin/sgtelib.dll"
-        $<TARGET_FILE_DIR:QTapp>
+if(NOT WINDEPLOYQT_EXECUTABLE)
+    get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
+endif()
+
+# 2. Définition du dossier de sortie (à la racine de ton build)
+set(DEPLOY_ROOT_DIR "${CMAKE_BINARY_DIR}/DISTRIBUTION")
+set(DEPLOY_BIN_DIR "${DEPLOY_ROOT_DIR}/bin")
+
+add_custom_target(deploy_package
+        # Nettoyage du dossier précédent
+        COMMAND ${CMAKE_COMMAND} -E rm -rf "${DEPLOY_ROOT_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${DEPLOY_BIN_DIR}"
+
+        # Copie de l'exécutable
+        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:QTapp>" "${DEPLOY_BIN_DIR}/"
+
+        # Copie des DLL Nomad et Sgtelib
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${NOMAD_HOME_PATH}/bin/nomad.dll" "${DEPLOY_BIN_DIR}/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${NOMAD_HOME_PATH}/bin/sgtelib.dll" "${DEPLOY_BIN_DIR}/"
+
+        # Copie du dossier data
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/PROJET1/data" "${DEPLOY_ROOT_DIR}/data"
+
+        # Exécution de windeployqt sur le dossier de distribution
+        COMMAND "${WINDEPLOYQT_EXECUTABLE}"
+        --verbose 0
+        --no-compiler-runtime
+        --qmldir "${CMAKE_CURRENT_SOURCE_DIR}/PROJET1"
+        "${DEPLOY_BIN_DIR}/QTapp.exe"
+
+        # Création du lanceur .bat à la racine (pour ne pas voir les DLL)
+        COMMAND ${CMAKE_COMMAND} -E echo "@echo off" > "${DEPLOY_ROOT_DIR}/Lancer_Application.bat"
+        COMMAND ${CMAKE_COMMAND} -E echo "start bin/QTapp.exe" >> "${DEPLOY_ROOT_DIR}/Lancer_Application.bat"
+
+        COMMENT "Création du package de distribution dans ${DEPLOY_ROOT_DIR}..."
 )

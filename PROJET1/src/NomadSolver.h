@@ -92,6 +92,7 @@ public:
             std::cout << "Puissance totale initiale : " << puissanceTotale << " MW" << std::endl;
             */
             params.set_X0(orig); // Point de départ initial
+            params.set_MESH_UPDATE_BASIS(2.0); //pour gérer le changement de taille du mesh, 4 par défaut.
             try
             {
                 params.check(); // Vérifie la validité des paramètres
@@ -128,7 +129,7 @@ public:
         }
     }
 
-    vector<double> initial_x = std::vector<double>(5, 0.0); // Point de départ initial pour les débits des turbines
+    vector<double> initial_x = std::vector<double>(5, 1.0); // Point de départ initial pour les débits des turbines
 
     void set_initial_x(const vector<double>& start)
     {

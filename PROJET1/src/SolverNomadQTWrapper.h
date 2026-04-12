@@ -17,7 +17,10 @@ class NomadSolverWrapper : public SolverWrapper
     Q_PROPERTY(double initialMeshSize READ initialMeshSize WRITE setInitialMeshSize NOTIFY initialMeshSizeChanged)
     Q_PROPERTY(QVariantList initialX READ initialX WRITE setInitialX NOTIFY initialXChanged)
 public:
-    explicit NomadSolverWrapper(QObject* parent = nullptr) : m_solver(){}
+    explicit NomadSolverWrapper(QObject* parent = nullptr) : m_solver()
+    {
+        for (int i = 0; i < 5; ++i) m_initialX.append(m_solver.get_initial_x()[i]);
+    }
 
     [[nodiscard]] QString name() const override { return "MADS (NOMAD)"; }
     ResourceAllocationSolver* getSolver() override { return &m_solver; }

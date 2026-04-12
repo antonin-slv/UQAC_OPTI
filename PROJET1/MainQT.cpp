@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
         Qt::QueuedConnection);
 
     // 5. Chargement du module QML (Syntaxe Qt 6)
+    engine.addImportPath("qrc:/");
     engine.loadFromModule("UQAC_OPTI", "MainQT");
 
     // 6. Vérification critique

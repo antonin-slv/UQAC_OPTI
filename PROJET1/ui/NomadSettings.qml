@@ -50,9 +50,9 @@ ColumnLayout {
             text: solver ? solver.minMeshSize.toString() : "0.001"
 
             validator: DoubleValidator {
-                bottom: 0.000001
+                bottom: 0.000000001
                 top: 1.0
-                decimals: 7
+                decimals: 10
                 locale: "C" // Force le point décimal
             }
 
