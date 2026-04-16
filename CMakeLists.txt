@@ -24,6 +24,10 @@ if(NOT NOMAD_HOME_PATH)
 endif()
 
 
+add_executable( NomadOnly
+        PROJET1/NomadMain.cpp
+)
+
 qt_add_executable(QTapp
         PROJET1/MainQT.cpp
         PROJET1/src/centraleQTWrap.h
@@ -31,7 +35,6 @@ qt_add_executable(QTapp
         PROJET1/src/SolverManagerQt.h
         PROJET1/src/SolverNomadQTWrapper.h
         #PROJET1/src/NomadEvaluator.hpp
-
 )
 
 qt_add_qml_module(QTapp
@@ -70,6 +73,10 @@ include_directories(QTapp PRIVATE
         "PROJET1/src"
         "${NOMAD_HOME_PATH}/src"
         "${SGTELIB}/src")
+include_directories(NomadOnly PRIVATE
+        "PROJET1/src"
+        "${NOMAD_HOME_PATH}/src"
+        "${SGTELIB}/src")
 link_directories("${NOMAD_HOME_PATH}/bin")
 
 add_executable(UqacOptiProjetHiv2026 PROJET1/Main.cpp
@@ -79,7 +86,7 @@ add_executable(UqacOptiProjetHiv2026 PROJET1/Main.cpp
         PROJET1/src/DPResourceAllocationFast.cpp
         "PROJET1/src/ResourceAllocationSolver.cpp"
         )
-#target_link_libraries(UqacOptiProjetHiv2026 PRIVATE OpenXLSX::OpenXLSX)
+target_link_libraries(UqacOptiProjetHiv2026 PRIVATE OpenXLSX::OpenXLSX)
 
 target_link_libraries(QTapp PRIVATE
         Qt6::Quick
@@ -89,6 +96,10 @@ target_link_libraries(QTapp PRIVATE
         Qt6::QuickControls2
         "C:/Program Files/DEV/nomad.3.9.1/bin/nomad.lib"
 )
+target_link_libraries(NomadOnly PRIVATE
+        "C:/Program Files/DEV/nomad.3.9.1/bin/nomad.lib"
+)
+
 
 #set_target_properties(QTapp PROPERTIES WIN32_EXECUTABLE FALSE )
 

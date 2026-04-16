@@ -16,11 +16,11 @@
 class NomadRessourceAlloc : public ResourceAllocationSolver
 {
 public:
-    int max_eval_count = 1000;
-    bool use_XTRM_barrier = true;
-    double min_mesh_size = 0.001;
-    double initial_mesh_size = 1.0;
-
+    int max_eval_count = 500;
+    bool use_XTRM_barrier = false;
+    double min_mesh_size = 0.00000000001;
+    double initial_mesh_size = 7.0;
+    int display_degree = 2;
     NomadRessourceAlloc() = default;
 #ifdef Q_MOC_RUN
     std::vector<std::pair<float, float>> allocateResources() override {
@@ -47,7 +47,7 @@ public:
             bout[1] = use_XTRM_barrier ?  NOMAD::EB : NOMAD::PB;
             params.set_SEED(0);
             params.set_BB_OUTPUT_TYPE(bout);
-            params.set_DISPLAY_DEGREE(2);
+            params.set_DISPLAY_DEGREE(display_degree);
             params.set_DISPLAY_STATS("BBE ( SOL ) OBJ");
             params.set_MIN_MESH_SIZE(min_mesh_size);
             params.set_INITIAL_MESH_SIZE(initial_mesh_size);
